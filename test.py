@@ -22,7 +22,7 @@ def createLobby(max_players=4):
     create_lobby_packet.ParseFromString(data)
     
     #debug
-    #print(create_lobby_packet)
+    print(create_lobby_packet)
 
     #auto join creator
     joinLobby(create_lobby_packet.lobby_id)
@@ -46,7 +46,7 @@ def joinLobby(lobby_id):
     connect_packet.ParseFromString(data)
 
     #debug
-    #print(connect_packet)
+    print(connect_packet)
 
 def sendMessage():
     #instantiate attributes
@@ -79,6 +79,20 @@ def quitLobby():
     #debug
     #print(disconnect_packet)
 
+def showAllPlayers():
+    #instantiate attributes
+    player_list_packet = TcpPacketModule.TcpPacket.PlayerListPacket()
+    player_list_packet.type = TcpPacketModule.TcpPacket.PLAYER_LIST
+
+    #get data from server
+    client_socket.sendall(player_list_packet.SerializeToString())
+    data = client_socket.recv(1024)
+    #parse received data
+    player_list_packet = TcpPacketModule.TcpPacket.PlayerListPacket()
+    player_list_packet.ParseFromString(data)
+    print(player_list_packet)
+
 # test functions
 # createLobby()
+# showAllPlayers()
 # sendMessage()
