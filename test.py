@@ -107,7 +107,7 @@ def receive(socks):
         chat_packet.ParseFromString(data)
 
         # write message
-        sys.stdout.write("<"+chat_packet.player.name+"> ")
+        sys.stdout.write("<{}> ".format(chat_packet.player.name))
         sys.stdout.write(chat_packet.message)
         # display written message
         sys.stdout.flush() 
@@ -120,9 +120,9 @@ def receive(socks):
 
         # check packet type
         if disconnect_packet.update == TcpPacketModule.TcpPacket.DisconnectPacket.NORMAL:
-            sys.stdout.write(disconnect_packet.player.name+" has disconnected from the chat lobby.\n")
+            sys.stdout.write("<Server> {} has disconnected from the chat lobby.\n".format(disconnect_packet.player.name))
         elif disconnect_packet.update == TcpPacketModule.TcpPacket.DisconnectPacket.LOST:
-            sys.stdout.write(disconnect_packet.player.name+" lost connection from the chat lobby.\n")
+            sys.stdout.write("<Server> {} lost connection from the chat lobby.\n".format(disconnect_packet.player.name))
 
         # display server message
         sys.stdout.flush() 
@@ -133,7 +133,7 @@ def receive(socks):
         connect_packet = TcpPacketModule.TcpPacket.ConnectPacket()
         connect_packet.ParseFromString(data)
 
-        sys.stdout.write(connect_packet.player.name+" has connected to the chat lobby.\n")
+        sys.stdout.write("<Server> {} has connected to the chat lobby.\n".format(connect_packet.player.name))
         sys.stdout.flush()
 
 def quitLobby():
