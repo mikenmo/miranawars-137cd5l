@@ -55,7 +55,7 @@ def sendMessage():
     #instantiate attributes
     chat_packet = TcpPacketModule.TcpPacket.ChatPacket()
     chat_packet.type = TcpPacketModule.TcpPacket.CHAT
-    chat_packet.message = input("Enter message: ")
+    chat_packet.message = sys.stdin.readline()
 
     #send then receive
     client_socket.sendall(chat_packet.SerializeToString())
@@ -64,6 +64,9 @@ def sendMessage():
     chat_packet = TcpPacketModule.TcpPacket.ChatPacket()
     chat_packet.ParseFromString(data)
 
+    sys.stdout.write("<You>") 
+    sys.stdout.write(chat_packet.message)
+    sys.stdout.flush()
     #debug
     #print(chat_packet)
 
@@ -114,34 +117,33 @@ while choice != "3":
     elif choice == "2":
         lobby_id = input("Enter Lobby ID: ")
         joinLobby(lobby_id)
-        while True: 
-            # maintains a list of possible input streams 
-            sockets_list = [sys.stdin, client_socket] 
-          
-            """ There are two possible input situations. Either the 
-            user wants to give  manual input to send to other people, 
-            or the server is sending a message  to be printed on the 
-            screen. Select returns from sockets_list, the stream that 
-            is reader for input. So for example, if the server wants 
-            to send a message, then the if condition will hold true 
-            below.If the user wants to send a message, the else 
-            condition will evaluate as true"""
-            read_sockets, write_socket, error_socket = select.select(sockets_list,[],[]) 
-          
-            for socks in read_sockets: 
-                if socks == client_socket: 
-                    message = socks.recv(BUFFER_SIZE)  
-                    sys.stdout.write("<Server>") 
-                    sys.stdout.write(message.decode('ASCII')) # write "<Server>" and message in a buffer
-                    sys.stdout.flush() # display written message
-                else:
-                    message = sys.stdin.readline() 
-                    client_socket.send(message.encode('ASCII'))
-                    sys.stdout.write("<You>") 
-                    sys.stdout.write(message)
-                    sys.stdout.flush()
     elif choice == "3":
-        return
+        break
     else:
         print("Invalid input")
+
+    while True: 
+        # maintains a list of possible input streams 
+        sockets_list = [sys.stdin, client_socket] 
+        
+        # """ There are two possible input situations. Either the 
+        # user wants to give  manual input to send to other people, 
+        # or the server is sending a message  to be printed on the 
+        # screen. Select returns from sockets_list, the stream that 
+        # is reader for input. So for example, if the server wants 
+        # to send a message, then the if condition will hold true 
+        # below.If the user wants to send a message, the else 
+        # condition will evaluate as true"""
+        read_sockets, write_socket, error_socket = select.select(sockets_list,[],[]) 
+        
+        for socks in read_sockets: 
+            if socks == client_socket: 
+                message = socks.recv(BUFFER_SIZE)  
+                sys.stdout.write("<Server>") 
+                sys.stdout.write(message.decode('ASCII')) # write "<Server>" and message in a buffer
+                sys.stdout.flush() # display written message
+            else:
+                sendMessage()
+                
+    
 
