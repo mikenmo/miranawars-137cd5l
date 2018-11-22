@@ -70,6 +70,15 @@ def sendMessage():
     #debug
     #print(chat_packet)
 
+def receiveMessage(socks):
+    #instantiate attributes
+    data = socks.recv(BUFFER_SIZE)
+    
+    chat_packet = TcpPacketModule.TcpPacket.ChatPacket()
+    chat_packet.ParseFromString(data)
+
+    sys.stdout.write(str(chat_packet))
+
 def quitLobby():
     #instantiate attributes
     disconnect_packet = TcpPacketModule.TcpPacket.DisconnectPacket()
@@ -138,9 +147,7 @@ while choice != "3":
         
         for socks in read_sockets: 
             if socks == client_socket: 
-                message = socks.recv(BUFFER_SIZE)  
-                sys.stdout.write("<Server>") 
-                sys.stdout.write(message.decode('ASCII')) # write "<Server>" and message in a buffer
+                receiveMessage(socks)
                 sys.stdout.flush() # display written message
             else:
                 sendMessage()
