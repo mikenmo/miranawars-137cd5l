@@ -106,12 +106,11 @@ def receive(socks, player_name):
         chat_packet = TcpPacketModule.TcpPacket.ChatPacket()
         chat_packet.ParseFromString(data)
 
-        if chat_packet.player.name != player_name:
-            # write message
-            sys.stdout.write("<"+chat_packet.player.name+"> ")
-            sys.stdout.write(chat_packet.message)
-            # display written message
-            sys.stdout.flush() 
+        # write message
+        sys.stdout.write("<"+chat_packet.player.name+"> ")
+        sys.stdout.write(chat_packet.message)
+        # display written message
+        sys.stdout.flush() 
 
     # received disconnect packet
     elif tcp_packet.type == TcpPacketModule.TcpPacket.DISCONNECT:
