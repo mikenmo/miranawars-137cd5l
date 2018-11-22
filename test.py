@@ -25,7 +25,8 @@ def createLobby(max_players=4):
     create_lobby_packet.ParseFromString(data)
     
     # debug
-    # print(create_lobby_packet)
+    print( "Lobby created! Your lobby ID is \"{}\"".format(create_lobby_packet.lobby_id) )
+    print( "Auto joining lobby..." )
 
     #auto join creator
     joinLobby(create_lobby_packet.lobby_id)
@@ -49,7 +50,7 @@ def joinLobby(lobby_id):
     connect_packet.ParseFromString(data)
 
     # debug
-    print(connect_packet)
+    # print(connect_packet)
 
 def send(message):
     # instantiate attributes
@@ -61,6 +62,8 @@ def send(message):
         quitLobby()
     elif chat_packet.message == "/show_players\n":
         showAllPlayers()
+    elif chat_packet.message == "\n":
+        return
     else:
         client_socket.sendall(chat_packet.SerializeToString())
 
@@ -88,7 +91,7 @@ def receive(socks):
         sys.stdout.flush() # display written message
     # receive connect packet
     elif tcp_packet.type == TcpPacketModule.TcpPacket.CONNECT:
-        connect_packet = TcpPacketModule.TcpPacket.DisconnectPacket()
+        connect_packet = TcpPacketModule.TcpPacket.ConnectPacket()
         connect_packet.ParseFromString(data)
 
         sys.stdout.write(connect_packet.player.name+" has connected to the chat room.\n")
@@ -133,9 +136,10 @@ while choice != "3":
         break
     else:
         print("Invalid input")
+        continue
 
 
-    while message != "exit\n":
+    while message != "/exit\n":
         # maintains a list of possible input streams 
         sockets_list = [sys.stdin, client_socket] 
 
