@@ -22,7 +22,11 @@ LOBBY_FULL = 3
 # global client socket
 server_address = ("202.92.144.45", 80)
 client_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
-client_socket.connect(server_address)
+try:
+    client_socket.connect(server_address)
+except OSError:
+    print("Server is unreachable.")
+    sys.exit()
 
 def createLobby(player_name, max_players=4):
     # instantiate attributes
@@ -90,7 +94,7 @@ def send(message):
     # client requests list of players currently in lobby
     elif chat_packet.message == "/players\n":
         showAllPlayers()
-    else:
+    elif chat_packet.message != "\n":
         client_socket.sendall(chat_packet.SerializeToString())
 
 def receive(socks):
@@ -166,7 +170,7 @@ player_name = input("Enter your name: ")
 choice = 0
 message = ""
 
-while choice != "3":
+while choice != "3" and message != "/exit\n":
     print("Mirana Wars Chat Program")
     print("[1] Create Lobby")
     print("[2] Join Lobby")
@@ -200,7 +204,7 @@ while choice != "3":
         sockets_list = [sys.stdin, client_socket] 
 
         read_sockets, write_socket, error_socket = select.select(sockets_list,[],[]) 
-        
+
         # check each socket to determine source of data input
         for socks in read_sockets:
             # input came from server
