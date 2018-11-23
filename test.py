@@ -89,12 +89,12 @@ def send(message):
     chat_packet.message = message
 
     # client exits
-    if chat_packet.message == "/exit\n":
+    if chat_packet.message == "/exit":
         quitLobby()
     # client requests list of players currently in lobby
-    elif chat_packet.message == "/players\n":
+    elif chat_packet.message == "/players":
         showAllPlayers()
-    elif chat_packet.message != "\n":
+    elif chat_packet.message != "":
         client_socket.sendall(chat_packet.SerializeToString())
 
 def receive(socks):
@@ -112,7 +112,7 @@ def receive(socks):
 
         # write message
         sys.stdout.write("<{}> ".format(chat_packet.player.name))
-        sys.stdout.write(chat_packet.message)
+        sys.stdout.write(chat_packet.message+"\n")
         # display written message
         sys.stdout.flush() 
 
@@ -166,11 +166,14 @@ def showAllPlayers():
     sys.stdout.write("=====================\n\n")
     sys.stdout.flush()
 
+def removeNewline(message):
+    return message.splitlines()[0]
+
 player_name = input("Enter your name: ")
 choice = 0
 message = ""
 
-while choice != "3" and message != "/exit\n":
+while choice != "3" and message != "/exit":
     print("Mirana Wars Chat Program")
     print("[1] Create Lobby")
     print("[2] Join Lobby")
@@ -200,7 +203,7 @@ while choice != "3" and message != "/exit\n":
         print("Invalid input")
 
 
-    while message != "/exit\n":
+    while message != "/exit":
         sockets_list = [sys.stdin, client_socket] 
 
         read_sockets, write_socket, error_socket = select.select(sockets_list,[],[]) 
@@ -213,4 +216,5 @@ while choice != "3" and message != "/exit\n":
             # input came from client
             else:
                 message = sys.stdin.readline()
+                message = removeNewline(message)
                 send(message)
