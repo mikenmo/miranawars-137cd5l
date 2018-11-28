@@ -12,19 +12,25 @@ import socket as Socket
 import select
 import sys
 
-# constants
-BUFFER_SIZE = 1024
-SUCCESSFUL = 0
-UNSUCCESSFUL = 1
-LOBBY_DNE = 2
-LOBBY_FULL = 3
+IS_DISCONNECTED = False
 
-# global client socket
+# constants
+BUFFER_SIZE  = 1024
+SUCCESSFUL   = 0
+UNSUCCESSFUL = 1
+LOBBY_DNE    = 2
+LOBBY_FULL   = 3
+
+def initializeClient():
+    return Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
+
+# # global client socket
 server_address = ("202.92.144.45", 80)
-client_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
-client_socket.connect(server_address)
+client_socket = initializeClient()
 
 def createLobby(player_name, max_players=4):
+    IS_DISCONNECTED = False
+
     # instantiate attributes
     create_lobby_packet = TcpPacketModule.TcpPacket.CreateLobbyPacket()
     create_lobby_packet.type = TcpPacketModule.TcpPacket.CREATE_LOBBY
@@ -42,11 +48,14 @@ def createLobby(player_name, max_players=4):
     # print(create_lobby_packet)
 
     # auto join creator
-    joinLobby(create_lobby_packet.lobby_id, player_name)
+    status = joinLobby(create_lobby_packet.lobby_id, player_name)
 
-    return create_lobby_packet.lobby_id
+    return ( status, create_lobby_packet.lobby_id )
 
 def joinLobby(lobby_id, player_name):
+    
+    IS_DISCONNECTED = False
+
     tcp_packet = TcpPacketModule.TcpPacket()
 
     # instantiate attributes
@@ -84,16 +93,16 @@ def send(message):
     chat_packet.type = TcpPacketModule.TcpPacket.CHAT
     chat_packet.message = message
 
-    # client exits
-    if chat_packet.message == "/exit\n":
-        quitLobby()
+    # # client exits
+    # if chat_packet.message == "/exit":
+    #     quitLobby()
     # client requests list of players currently in lobby
-    elif chat_packet.message == "/players\n":
-        showAllPlayers()
-    else:
-        client_socket.sendall(chat_packet.SerializeToString())
+    # elif chat_packet.message == "/players":
+    #     showAllPlayers()
+    # elif chat_packet.message != "":
+    client_socket.sendall(chat_packet.SerializeToString())
 
-def receive(socks, player_name):
+def receive(socks):
     tcp_packet = TcpPacketModule.TcpPacket()
 
     # instantiate attributes
@@ -104,13 +113,10 @@ def receive(socks, player_name):
     if tcp_packet.type == TcpPacketModule.TcpPacket.CHAT:
         # create packet holder
         chat_packet = TcpPacketModule.TcpPacket.ChatPacket()
-        chat_packet.ParseFromString(data)
+        chat_packet.ParseFromString( data )
 
         # write message
-        sys.stdout.write("<"+chat_packet.player.name+"> ")
-        sys.stdout.write(chat_packet.message)
-        # display written message
-        sys.stdout.flush() 
+        return "<{}> {}".format( chat_packet.player.name, chat_packet.message )
 
     # received disconnect packet
     elif tcp_packet.type == TcpPacketModule.TcpPacket.DISCONNECT:
@@ -120,28 +126,25 @@ def receive(socks, player_name):
 
         # check packet type
         if disconnect_packet.update == TcpPacketModule.TcpPacket.DisconnectPacket.NORMAL:
-            sys.stdout.write(disconnect_packet.player.name+" has disconnected from the chat lobby.\n")
+            return "<Server> {} has disconnected from the chat lobby.\n".format( disconnect_packet.player.name )
         elif disconnect_packet.update == TcpPacketModule.TcpPacket.DisconnectPacket.LOST:
-            sys.stdout.write(disconnect_packet.player.name+" lost connection from the chat lobby.\n")
-
-        # display server message
-        sys.stdout.flush() 
+            return "<Server> {} lost connection from the chat lobby.\n".format( disconnect_packet.player.name )
 
     # received connect packet
     elif tcp_packet.type == TcpPacketModule.TcpPacket.CONNECT:
         # create packet holder
         connect_packet = TcpPacketModule.TcpPacket.ConnectPacket()
-        connect_packet.ParseFromString(data)
+        connect_packet.ParseFromString( data )
 
-        sys.stdout.write(connect_packet.player.name+" has connected to the chat lobby.\n")
-        sys.stdout.flush()
+        return "<Server> {} has connected to the chat lobby.\n".format(connect_packet.player.name)
 
 def quitLobby():
+    IS_DISCONNECTED = True
     # instantiate attributes
     disconnect_packet = TcpPacketModule.TcpPacket.DisconnectPacket()
     disconnect_packet.type = TcpPacketModule.TcpPacket.DISCONNECT
 
-    client_socket.sendall(disconnect_packet.SerializeToString())
+    client_socket.sendall( disconnect_packet.SerializeToString() )
 
 def showAllPlayers():
     # instantiate attributes
