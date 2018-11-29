@@ -10,12 +10,14 @@ class App:
 		self.root.geometry( "415x500" )
 		self.root.resizable( 0,0 )
 
-		self.root.protocol()
+		self.root.protocol( "WM_DELETE_WINDOW", self.handleClose )
 
 		self.frame = Frame( self.root )
 		self.frame.pack()
 		self.initialize_join_widgets()
 		self.initialize_chat_widgets()
+
+		self.IS_FIRSTRUN = True
 
 		self.root.mainloop()
 
@@ -123,7 +125,7 @@ class App:
 
 		self.chatLabel = Label( 
 			self.chatInput, 
-			text="<user>",
+			text = "Enter Message: ",
 			)
 
 		self.chatField = Entry( 
@@ -181,65 +183,93 @@ class App:
 			self.message.set( '' )
 
 	def displayMessage( self ):
+
 		while not ChatModule.IS_DISCONNECTED:
 			inputs = [ ChatModule.client_socket ]
 
+			# prevent file descriptor error when disconnecting
 			try:
+				# waits for sockets with a one second timeout
 				read, write, err = ChatModule.select.select( inputs, [], [], 1 )
 
 				for sock in read:
 					# input came from server
 					if sock == ChatModule.client_socket: 
-							msg = ''
-							try:
-								msg = ChatModule.receive( sock )
+						msg = ''
 
-								# prints message into the chat
-								self.chatMessages.insert( END, msg )
+						# try for internet connection
+						try:
+							msg = ChatModule.receive( sock )
 
-								# focuses on the last sent message
-								self.chatMessages.see( 'end' )
-							except OSError:
-								return
+							# prints message into the chat
+							self.chatMessages.insert( END, msg )
+
+							# focuses on the last sent message
+							self.chatMessages.see( 'end' )
+
+						except OSError:
+							print( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
+							return
 
 			except ValueError:
+				print( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
 				return
 
-
-				# input came from client
-				# else:
-				# 	send(message)
-
 	def attemptConnection( self ):
+
+		self.IS_FIRSTRUN = False
+		
+		# input validation
 		if self.name.get() == '' or self.id.get() == '':
 			self.status.set( "Fill in the missing details" )
 
 		else:
-			self.status.set( "Joining..." )
+			self.status.set( "JOINING..." )
 
+			# try for internet connection
 			try:
 				ChatModule.client_socket = ChatModule.initializeClient()
 				ChatModule.client_socket.connect( ChatModule.server_address )
 				_STATUS = ChatModule.joinLobby( self.id.get(), self.name.get() )
 
 				if _STATUS == ChatModule.SUCCESSFUL:
-					self.curr_id.set( "Lobby {}".format( self.id.get() ) )
+					self.curr_id.set( "LOBBY {}".format( self.id.get() ) )
 
-					self.switch_chat_state_widgets()
+					self.switch_to_chat_state_widgets()
 
+					self.status.set( '' )
 					self.chatMessages.insert( 
 						END, 
-						"Successfully connected to Lobby {} ".format( self.id.get() ),
+						"SUCCESSFULLY CONNECTED TO LOBBY!",
 						)
 
+					# execute message receiver on another thread
 					self.display_thread = Thread( target = self.displayMessage )
 					self.display_thread.start()
 
+				else:
+					if _STATUS == ChatModule.UNSUCCESSFUL:
+						self.status.set( "UNKNOW ERROR OCCURRED..." )
+
+					elif _STATUS == ChatModule.LOBBY_DNE:
+						self.status.set( "LOBBY DOES NOT EXIST!" )
+
+					elif _STATUS == ChatModule.LOBBY_FULL:
+						self.status.set( "LOBBY IS FULL..." )
+
+					self.closeSocket()
+
 			except OSError:
+				# raised if no internet connection
 				self.status.set( "Server is unreachable." )
 				self.id.set( '' )
 
 	def createAndConnect( self ):
+
+		self.IS_FIRSTRUN = False
+
+		self.status.set( '' )
+
 		if self.name.get() == '':
 			self.status.set( "Enter your user name" )
 
@@ -249,38 +279,45 @@ class App:
 				ChatModule.client_socket = ChatModule.initializeClient()
 				ChatModule.client_socket.connect( ChatModule.server_address )
 				_STATUS, _ID = ChatModule.createLobby( self.name.get() )
+
 				if _STATUS == ChatModule.SUCCESSFUL:
-					self.curr_id.set( "Lobby {}".format( _ID ) )
+					print( "<CLIENT> SUCCESSFULLY CONNECTED TO LOBBY!" )
+					self.curr_id.set( "LOBBY {}".format( _ID ) )
 
-					self.switch_chat_state_widgets()
+					self.switch_to_chat_state_widgets()
 
-				self.chatMessages.insert( 
-					END, 
-					"Successfully connected to Lobby {} ".format( _ID ),
-					)
+					self.chatMessages.insert( 
+						END, 
+						"SUCCESSFULLY CONNECTED TO LOBBY!",
+						)
 
-				self.display_thread = Thread( target = self.displayMessage )
-				self.display_thread.start()
+					self.display_thread = Thread( target = self.displayMessage )
+					self.display_thread.start()
+
+				else:
+					print( "<CLIENT> SERVER IS UNREACHABLE." )
+					self.status.set( "UNKNOW ERROR OCCURRED..." )
+					self.closeSocket()
 
 			except OSError:
-				self.status.set( "Server is unreachable." )
+				print( "<CLIENT> SERVER IS UNREACHABLE." )
+				self.status.set( "SERVER IS UNREACHABLE." )
 				self.id.set( '' )
 
 	def leaveLobby( self ):
 		ChatModule.quitLobby()
-		ChatModule.client_socket.shutdown( ChatModule.Socket.SHUT_RDWR )
-		ChatModule.client_socket.close()
+		self.closeSocket()
 
-		self.switch_join_state_widgets()
+		self.switch_to_join_state_widgets()
 
 		self.curr_id.set( 'Leaving lobby...' )
 		self.status.set( '' )
 
-		# print( "joining" )
+		# waits for the message receiver thread to finish
 		self.display_thread.join()
 		self.curr_id.set( '' )
 
-	def switch_join_state_widgets( self ):
+	def switch_to_join_state_widgets( self ):
 		self.chatMessages.config( state = 'disabled' )
 		self.chatField.config( state = 'disabled' )
 		self.leave.config( state = 'disabled' )
@@ -289,7 +326,7 @@ class App:
 		self.connect.config( state = 'normal' )
 		self.create.config( state = 'normal' )
 
-	def switch_chat_state_widgets( self ):
+	def switch_to_chat_state_widgets( self ):
 		self.name_input.config( state = 'disabled' )
 		self.id_input.config( state = 'disabled' )
 		self.connect.config( state = 'disabled' )
@@ -298,6 +335,24 @@ class App:
 		self.chatMessages.config( state = 'normal' )
 		self.chatField.config( state = 'normal' )
 		self.leave.config( state = 'normal' )
+
+		self.chatMessages.delete( 0, 'end' )
+
+	def closeSocket( self ):
+		print( "<CLIENT> CLOSING CONNECTION..." )
+		ChatModule.client_socket.shutdown( ChatModule.Socket.SHUT_RDWR )
+		ChatModule.client_socket.close()
+		print( "<CLIENT> SOCKET CLOSED!" )
+
+	def handleClose( self ):
+		if not ChatModule.IS_DISCONNECTED or self.IS_FIRSTRUN:
+			self.root.destroy()
+
+		else:
+			self.chatMessages.insert( 
+				END, 
+				"<CLIENT> LEAVE LOBBY FIRST BEFORE CLOSING!",
+				)
 
 	def nothing( self ):
 		pass
