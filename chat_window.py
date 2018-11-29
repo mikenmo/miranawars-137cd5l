@@ -182,8 +182,9 @@ class App:
 			ChatModule.send( msg )
 			self.message.set( '' )
 
+	# method used for threading; 
+	#  monitors, reads and displays incoming messages and notices from server
 	def displayMessage( self ):
-
 		while not ChatModule.IS_DISCONNECTED:
 			inputs = [ ChatModule.client_socket ]
 
