@@ -10,9 +10,9 @@ class Player:
 
     num_players = 0
     def __init__(self,name,xpos,ypos):
-        Player.num_players += 1
+        self.id = ''
+        self.address = ''
         self.name = name
-        self.id = Player.num_players+1
         self.hp = 100
         self.xp = 0
         self.lvl = 1
@@ -25,13 +25,9 @@ class Player:
         self.power = 1
         self.distance = 1
         self.speed = 1
-        #temp
-        self.sprite = pygame.Surface((50, 50))
-        self.sprite.fill((0, 255, 255))
 
     def arrowStats(self):
         return({"power":self.power,"distance":self.distance,"speed":self.speed})
-
     def upgradeArrow(self,upgradeType):
         self.upgrade-=1
         if upgradeType == Arrow.POWER:
