@@ -1,6 +1,7 @@
 import pygame
 import math
 import socket
+import select
 import pickle
 from classes.Player import *
 
@@ -41,6 +42,9 @@ while True:
         i=0
         arrow = ''
         running = True
+
+        sockets = [ client_socket ]
+        
         while running:
             clock.tick(60)
             print("here")
@@ -77,17 +81,22 @@ while True:
                         player.distance +=1
                     elif event.key == pygame.K_c:
                         player.speed +=1
-                        
+
             if player_move:
                 player.move()
                 client_socket.sendto(pickle.dumps(("PLAYER",player)), server_address)
-                data = client_socket.recv(4096)
-                keyword, players = pickle.loads(data)
-                for k,v in players.items():
-                    screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
 
                 if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
                     player_move = False
+
+            if player_leap:
+                player.leap()
+                client_socket.sendto(pickle.dumps(("PLAYER",player)), server_address)
+                
+                if i==8:
+                    player_leap = False
+                i+=1        
+
             if player_shoot:
                 arrow.move()
                 if -20 > arrow.xpos or arrow.xpos > w or -20 > arrow.ypos or arrow.ypos > h:
@@ -96,18 +105,19 @@ while True:
                 elif math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
                     player_shoot = False
                     arrow = ''
-            if player_leap:
-                player.leap()
-                client_socket.sendto(pickle.dumps(("PLAYER",player)), server_address)
-                data = client_socket.recv(4096)
-                keyword, player = pickle.loads(data)
-                for k,v in players.items():
-                    screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
-                if i==8:
-                    player_leap = False
-                i+=1        
+
             screen.fill((0, 0, 0))
-            
+
+            read, write, err = select.select( sockets, [], [], 0.1 )
+
+            for socks in read:
+                if socks == client_socket:
+                    if player_move or player_leap:
+                        data = socks.recv(4096)
+                        keyword, players = pickle.loads(data)
+                        for k,v in players.items():
+                                screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
             if(arrow!=''):
                 screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
+
             pygame.display.update()
