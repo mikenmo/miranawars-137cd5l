@@ -1,16 +1,21 @@
 import pygame
 import math
+import socket
+import pickle
 from classes.Player import *
 
-pygame.init()
 
-screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
-clock = pygame.time.Clock()
-w, h = pygame.display.get_surface().get_size()
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = ('localhost', 10000)
+client_socket.connect(server_address)
 
-player = Player("kenneth",w/2,h/2)
-x,y = w/2,h/2
+player = Player("hello",0,0)
 
+player_sprite = pygame.Surface((50, 50))
+player_sprite.fill((0, 255, 255))
+
+arrow_sprite = pygame.Surface((20,20))
+arrow_sprite.fill((255,0,0))
 # x, y, dx, dy = w/2,h/2 , 0, 0
 
 # bulletspeed = 15
@@ -32,68 +37,84 @@ x,y = w/2,h/2
 #         bullet_y += 20 * math.sin(angle)
 #     i+=1
 
-player_move = False
-player_shoot = False
-player_leap = False
-running = True
-i=0
-arrow = ''
-while running:
-    clock.tick(60)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            raise SystemExit
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                player_shoot = True
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-                #compute the angle
-                dx = mouse_x - player.xpos
-                dy = mouse_y - player.ypos
-                arrow = Arrow(player.id,player.xpos,player.ypos,math.atan2(dy, dx),player.power,player.distance,player.speed)
-            if event.button == 3:
-                player_move = True
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-                #compute the angle
-                dx = mouse_x - player.xpos
-                dy = mouse_y - player.ypos
-                player.angle = math.atan2(dy, dx)
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
-            elif event.key == pygame.K_e:
-                player_move = False
-                player_leap = True
-                i=0
-            elif event.key == pygame.K_s:
-                player_move = False
-            elif event.key == pygame.K_z:
-                player.power +=1
-            elif event.key == pygame.K_x:
-                player.distance +=1
-            elif event.key == pygame.K_c:
-                player.speed +=1
-                
-    if player_move:
-        player.move()
-        if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
-            player_move = False
-            x,y = mouse_x, mouse_y
-    if player_shoot:
-        arrow.move()
-        if -20 > arrow.xpos or arrow.xpos > w or -20 > arrow.ypos or arrow.ypos > h:
-            arrow.xpos, arrow.ypos = player_x,player_y
-            player_shoot = False
-        if math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
-            player_shoot = False
-            arrow = ''
-    if player_leap:
-        player.leap()
-        if i==8:
-            player_leap = False
-        i+=1        
-    screen.fill((0, 0, 0))
-    screen.blit(player.sprite, (player.xpos-12.5, player.ypos-12.5))
-    if(arrow!=''):
-        screen.blit(arrow.sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
-    pygame.display.update()
+
+connected = False
+while True:
+    if not connected and player.id != '':
+        connected = True
+        print("Connected.....")
+    elif not connected:
+        print("Connecting.....")
+        client_socket.sendall(pickle.dumps(player))
+        data = client_socket.recv(4096)
+        player = pickle.loads(data)
+    elif connected:
+        pygame.init()
+        screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
+        clock = pygame.time.Clock()
+        w, h = pygame.display.get_surface().get_size()
+        player_move = False
+        player_shoot = False
+        player_leap = False
+        i=0
+        arrow = ''
+        running = True
+        while running:
+            clock.tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    raise SystemExit
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        player_shoot = True
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        #compute the angle
+                        dx = mouse_x - player.xpos
+                        dy = mouse_y - player.ypos
+                        arrow = Arrow(player.id,player.xpos,player.ypos,math.atan2(dy, dx),player.power,player.distance,player.speed)
+                    if event.button == 3:
+                        player_move = True
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        #compute the angle
+                        dx = mouse_x - player.xpos
+                        dy = mouse_y - player.ypos
+                        player.angle = math.atan2(dy, dx)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_e:
+                        player_move = False
+                        player_leap = True
+                        i=0
+                    elif event.key == pygame.K_s:
+                        player_move = False
+                    elif event.key == pygame.K_z:
+                        player.power +=1
+                    elif event.key == pygame.K_x:
+                        player.distance +=1
+                    elif event.key == pygame.K_c:
+                        player.speed +=1
+                        
+            if player_move:
+                player.move()
+                if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
+                    player_move = False
+            if player_shoot:
+                arrow.move()
+                if -20 > arrow.xpos or arrow.xpos > w or -20 > arrow.ypos or arrow.ypos > h:
+                    player_shoot = False
+                    arrow = ''
+                elif math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
+                    player_shoot = False
+                    arrow = ''
+            if player_leap:
+                player.leap()
+                if i==8:
+                    player_leap = False
+                i+=1        
+            screen.fill((0, 0, 0))
+            print(player.xpos)
+            screen.blit(player_sprite, (player.xpos-12.5, player.ypos-12.5))
+            if(arrow!=''):
+                screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
+            pygame.display.update()
