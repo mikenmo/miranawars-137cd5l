@@ -9,34 +9,13 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('localhost', 10000)
 client_socket.connect(server_address)
 
-player = Player("hello",0,0)
+player = Player(input("Enter name: "),0,0)
 
 player_sprite = pygame.Surface((50, 50))
 player_sprite.fill((0, 255, 255))
 
 arrow_sprite = pygame.Surface((20,20))
 arrow_sprite.fill((255,0,0))
-# x, y, dx, dy = w/2,h/2 , 0, 0
-
-# bulletspeed = 15
-
-# def shoot(mouse_x, mouse_y):
-#     global target_x,target_y,dxs,dxy,bullet_x,bullet_y
-#     dxs = mouse_x - target_x
-#     dys = mouse_y - target_y
-#     angle = math.atan2(dys, dxs)
-#     bullet_x += bulletspeed * math.cos(angle)
-#     bullet_y += bulletspeed * math.sin(angle)
-    
-# def leaping():
-#     global player_x, player_y, bullet_x, bullet_y, angle, i
-#     player_x += 20 * math.cos(angle)
-#     player_y += 20 * math.sin(angle)
-#     if not player_shoot:
-#         bullet_x += 20 * math.cos(angle)
-#         bullet_y += 20 * math.sin(angle)
-#     i+=1
-
 
 connected = False
 while True:
