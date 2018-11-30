@@ -78,6 +78,9 @@ while True:
                         
             if player_move:
                 player.move()
+                client_socket.sendall(pickle.dumps(("PLAYER",player)))
+                data = client_socket.recv(4096)
+                keyword, player = pickle.loads(data)
                 if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
                     player_move = False
             if player_shoot:
@@ -90,6 +93,9 @@ while True:
                     arrow = ''
             if player_leap:
                 player.leap()
+                client_socket.sendall(pickle.dumps(("PLAYER",player)))
+                data = client_socket.recv(4096)
+                keyword, player = pickle.loads(data)
                 if i==8:
                     player_leap = False
                 i+=1        
