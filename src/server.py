@@ -49,6 +49,6 @@ while True:
         if(keyword == "PLAYER"):
             players[data.id].xpos = data.xpos
             players[data.id].ypos = data.ypos
-
+            broadcast("PLAYER",players)
 
 
