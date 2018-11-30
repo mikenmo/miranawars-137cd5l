@@ -7,7 +7,7 @@ from classes.Player import *
 
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
+server_address = ('localhost', 10001)
 client_socket.connect(server_address)
 
 player = Player(input("Enter name: "),0,0)
@@ -22,9 +22,14 @@ connected = False
 keyword = ''
 while True:
     if not connected and keyword == 'CONNECTED':
-        connected = True
-        keyword = ''
-        print("Connected.....")
+        print( "Waiting..." )
+        data = client_socket.recv(4096)
+        keyword, _ = pickle.loads(data)
+
+        if keyword == "START":
+            connected = True
+            keyword = ''
+            print("Connected.....")
     elif not connected:
         print("Connecting.....")
         client_socket.sendto(pickle.dumps(("CONNECT",player)), server_address)
@@ -115,6 +120,7 @@ while True:
                     if socks == client_socket:
                         data = socks.recv(4096)
                         keyword, players = pickle.loads(data)
+                        print( keyword, players )
                         screen.fill((0, 0, 0))
                         for k,v in players.items():
                                 screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))

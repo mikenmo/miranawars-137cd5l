@@ -1,7 +1,6 @@
 import socket
 import sys
 import pickle
-from select import select
 
 from classes.Player import *
 from classes.Arrow import *
@@ -19,7 +18,7 @@ num_players=2
 num_arrows=0
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
+server_address = ('localhost', 10001)
 server_socket.bind(server_address)
 
 def broadcast(keyword, data):
@@ -28,8 +27,6 @@ def broadcast(keyword, data):
 
 gameState = WAITING_FOR_PLAYERS
 print("SERVER START")
-
-sockets = [ server_socket ]
 
 while True:
     print( "State: {}".format( gameState ) )
@@ -46,13 +43,16 @@ while True:
             print(num_players)
             
             # one player test
-            gameState = GAME_START
+            # gameState = GAME_START
             # if(len(players)==num_players):
-            #     print("Game State: START")
-            #     gameState = GAME_START
+            if(len(players) == 2):
+                print("Game State: START")
+                broadcast("START",data)
+                gameState = GAME_START
+
     elif gameState == GAME_START:
         gameState=IN_PROGRESS
-        broadcast("PLAYER",players)
+        # broadcast("PLAYER",players)
         
     elif gameState == IN_PROGRESS:
         if(keyword == "PLAYER"):
