@@ -18,15 +18,17 @@ arrow_sprite = pygame.Surface((20,20))
 arrow_sprite.fill((255,0,0))
 
 connected = False
+keyword = ''
 while True:
-    if not connected and player.id != '':
+    if not connected and keyword == 'CONNECTED':
         connected = True
+        keyword = ''
         print("Connected.....")
     elif not connected:
         print("Connecting.....")
-        client_socket.sendall(pickle.dumps(player))
+        client_socket.sendall(pickle.dumps(("CONNECT",player)))
         data = client_socket.recv(4096)
-        player = pickle.loads(data)
+        keyword, player = pickle.loads(data)
     elif connected:
         pygame.init()
         screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
@@ -92,7 +94,6 @@ while True:
                     player_leap = False
                 i+=1        
             screen.fill((0, 0, 0))
-            print(player.xpos)
             screen.blit(player_sprite, (player.xpos-12.5, player.ypos-12.5))
             if(arrow!=''):
                 screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))

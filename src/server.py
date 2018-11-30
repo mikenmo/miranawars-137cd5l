@@ -20,17 +20,12 @@ def broadcast(data):
 print("SERVER START")
 while True:
     data, address = server_socket.recvfrom(4096)
-    data = pickle.loads(data)
-    if(isinstance(data,Player)):
+    keyword, data = pickle.loads(data)
+    if(keyword == "CONNECT"):
         data.id = num_players
         data.address = address
         num_players+=1
         # broadcast()
         players.append(data)
-        server_socket.sendto(pickle.dumps(data),address)
+        server_socket.sendto(pickle.dumps(("CONNECTED",data)),address)
         print('%s connected....' % data.name)
-    elif(isinstance(data,Arrow)):
-        data.id = num_arrows
-        num_arrows+=1
-        arrow_arr.append(data)
-        server_socket.sendall(pickle.dumps(player))
