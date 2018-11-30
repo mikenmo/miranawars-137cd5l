@@ -106,18 +106,21 @@ while True:
                     player_shoot = False
                     arrow = ''
 
-            screen.fill((0, 0, 0))
 
-            read, write, err = select.select( sockets, [], [], 0.1 )
 
-            for socks in read:
-                if socks == client_socket:
-                    if player_move or player_leap:
+            if player_move or player_leap:
+                read, write, err = select.select( sockets, [], [] )
+
+                for socks in read:
+                    if socks == client_socket:
                         data = socks.recv(4096)
                         keyword, players = pickle.loads(data)
+                        screen.fill((0, 0, 0))
                         for k,v in players.items():
                                 screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
+
             if(arrow!=''):
+                screen.fill((0, 0, 0))
                 screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
 
             pygame.display.update()
