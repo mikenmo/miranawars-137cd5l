@@ -12,7 +12,7 @@ client_socket.connect(server_address)
 player = Player(input("Enter name: "),0,0)
 
 player_sprite = pygame.Surface((50, 50))
-player_sprite.fill((0, 255, 255))
+player_sprite.fill((255, 255, 255))
 
 arrow_sprite = pygame.Surface((20,20))
 arrow_sprite.fill((255,0,0))
@@ -26,7 +26,7 @@ while True:
         print("Connected.....")
     elif not connected:
         print("Connecting.....")
-        client_socket.sendall(pickle.dumps(("CONNECT",player)))
+        client_socket.sendto(pickle.dumps(("CONNECT",player)), server_address)
         data = client_socket.recv(4096)
         keyword, player = pickle.loads(data)
     elif connected:
@@ -34,6 +34,7 @@ while True:
         screen = pygame.display.set_mode((500,500),pygame.HWSURFACE)
         clock = pygame.time.Clock()
         w, h = pygame.display.get_surface().get_size()
+        screen.blit(player_sprite, (0, 0))
         player_move = False
         player_shoot = False
         player_leap = False
@@ -79,10 +80,10 @@ while True:
                         
             if player_move:
                 player.move()
-                client_socket.sendall(pickle.dumps(("PLAYER",player)))
+                client_socket.sendto(pickle.dumps(("PLAYER",player)), server_address)
                 data = client_socket.recv(4096)
                 keyword, players = pickle.loads(data)
-                for k,v in players.iter():
+                for k,v in players.items():
                     screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
 
                 if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
@@ -97,10 +98,10 @@ while True:
                     arrow = ''
             if player_leap:
                 player.leap()
-                client_socket.sendall(pickle.dumps(("PLAYER",player)))
+                client_socket.sendto(pickle.dumps(("PLAYER",player)), server_address)
                 data = client_socket.recv(4096)
                 keyword, player = pickle.loads(data)
-                for k,v in players.iter():
+                for k,v in players.items():
                     screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
                 if i==8:
                     player_leap = False
