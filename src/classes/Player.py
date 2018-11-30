@@ -42,8 +42,10 @@ class Player:
             self.arrow.speed+=1
 
     def move(self,mouse_x,mouse_y):
-        dx = mouse_x - self.xpos
-        dy = mouse_y - self.ypos
-        self.angle = math.atan2(dy, dx)
         self.xpos += self.ms * math.cos(self.angle)
         self.ypos += self.ms * math.sin(self.angle)
+
+    def leap(self):
+        self.xpos += 20 * math.cos(self.angle)
+        self.ypos += 20 * math.sin(self.angle)
+        

@@ -9,7 +9,7 @@ clock = pygame.time.Clock()
 w, h = pygame.display.get_surface().get_size()
 
 player = Player("kenneth",w/2,h/2)
-
+x,y = w/2,h/2
 
 # x, y, dx, dy = w/2,h/2 , 0, 0
 
@@ -34,10 +34,9 @@ player = Player("kenneth",w/2,h/2)
 
 player_move = False
 # player_shoot = False
-# player_leap = False
-# prev_x,prev_y = 0,0
-# i=0
+player_leap = False
 running = True
+i=0
 while running:
     clock.tick(60)
     for event in pygame.event.get():
@@ -50,19 +49,21 @@ while running:
             #         player_shoot = True
             #         shoot_mouse_x, shoot_mouse_y = pygame.mouse.get_pos()
             if event.button == 3:
-                x,y = player.xpos,player.ypos
                 player_move = True
                 mouse_x, mouse_y = pygame.mouse.get_pos()
+                #compute the angle
+                dx = mouse_x - player.xpos
+                dy = mouse_y - player.ypos
+                player.angle = math.atan2(dy, dx)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
-        #     elif event.key == pygame.K_e:
-        #         player_move = False
-        #         player_leap = True
-        #         prev_x,prev_y = player_x, player_y
-        #         i=0
-        #     elif event.key == pygame.K_s:
-        #         player_move = False
+            elif event.key == pygame.K_e:
+                player_move = False
+                player_leap = True
+                i=0
+            elif event.key == pygame.K_s:
+                player_move = False
                 
     if player_move:
         player.move(mouse_x, mouse_y)
@@ -74,10 +75,11 @@ while running:
 #         if -20 > bullet_x or bullet_x > w or -20 > bullet_y or bullet_y > h:
 #             bullet_x, bullet_y = player_x,player_y
 #             player_shoot = False
-#     if player_leap:
-#         leaping()
-#         if i==8:
-#             player_leap = False          
+    if player_leap:
+        player.leap()
+        if i==8:
+            player_leap = False
+        i+=1        
     screen.fill((0, 0, 0))
     screen.blit(player.sprite, (player.xpos-12.5, player.ypos-12.5))
     # screen.blit(bullet, (bullet_x+2.5, bullet_y+2.5))s
