@@ -36,12 +36,20 @@ while True:
             players[data.id]=data
             broadcast("CONNECTED",data)
             print('%s connected....' % data.name)
-            print(len(players))
+            for k,v in players.items():
+                print(v.id)
+                print(v.name)
             print(num_players)
             
             if(len(players)==num_players):
                 print("Game State: START")
                 gameState = GAME_START
+        if(keyword == "PLAYER"):
+            print(data.id)
+            players[data.id].xpos = data.xpos
+            players[data.id].ypos = data.ypos
+            broadcast("PLAYER",players)
+
     elif gameState == GAME_START:
         gameState=IN_PROGRESS
         
