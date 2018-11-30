@@ -31,7 +31,7 @@ while True:
         keyword, player = pickle.loads(data)
     elif connected:
         pygame.init()
-        screen = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
+        screen = pygame.display.set_mode((500,500),pygame.HWSURFACE)
         clock = pygame.time.Clock()
         w, h = pygame.display.get_surface().get_size()
         player_move = False
@@ -42,6 +42,7 @@ while True:
         running = True
         while running:
             clock.tick(60)
+            print("here")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     raise SystemExit
@@ -80,7 +81,10 @@ while True:
                 player.move()
                 client_socket.sendall(pickle.dumps(("PLAYER",player)))
                 data = client_socket.recv(4096)
-                keyword, player = pickle.loads(data)
+                keyword, players = pickle.loads(data)
+                for k,v in players.iter():
+                    screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
+
                 if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
                     player_move = False
             if player_shoot:
@@ -96,11 +100,13 @@ while True:
                 client_socket.sendall(pickle.dumps(("PLAYER",player)))
                 data = client_socket.recv(4096)
                 keyword, player = pickle.loads(data)
+                for k,v in players.iter():
+                    screen.blit(player_sprite, (v.xpos-12.5, v.ypos-12.5))
                 if i==8:
                     player_leap = False
                 i+=1        
             screen.fill((0, 0, 0))
-            screen.blit(player_sprite, (player.xpos-12.5, player.ypos-12.5))
+            
             if(arrow!=''):
                 screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
             pygame.display.update()
