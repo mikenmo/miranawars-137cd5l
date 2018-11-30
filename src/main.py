@@ -82,7 +82,7 @@ while running:
     if player_shoot:
         arrow.move()
         if -20 > arrow.xpos or arrow.xpos > w or -20 > arrow.ypos or arrow.ypos > h:
-            bullet_x, bullet_y = player_x,player_y
+            arrow.xpos, arrow.ypos = player_x,player_y
             player_shoot = False
         if math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
             player_shoot = False
