@@ -9,6 +9,13 @@ import sys
 import select
 import json
 from classes.Player import *
+from threading import Thread
+
+import chat_window
+
+# initialize chat module
+chat_thread = Thread( target=chat_window.main )
+chat_thread.start()
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('localhost', 10000)
@@ -123,3 +130,6 @@ while running:
                 i = 0
             i+=1
     pygame.display.update()
+
+pygame.quit()
+chat_thread.join()
