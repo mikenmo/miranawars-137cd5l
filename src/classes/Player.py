@@ -7,8 +7,6 @@ class Player:
     POWER = 1
     DISTANCE = 2
     SPEED = 3
-
-    num_players = 0
     def __init__(self,name,xpos,ypos):
         self.id = ''
         self.address = ''

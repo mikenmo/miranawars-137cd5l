@@ -1,9 +1,13 @@
 import pygame
 import math
 import socket
-import pickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 import sys
 import select
+import json
 from classes.Player import *
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -11,15 +15,15 @@ server_address = ('localhost', 10000)
 client_socket.connect(server_address)
 
 player = Player(input("Enter name: "),0,0)
-
-player_sprites = {}
-player_sprites[0] = pygame.Surface((50, 50))
-player_sprites[0].fill((0, 255, 255))
-
-arrow_sprite = pygame.Surface((20,20))
-arrow_sprite.fill((255,0,0))
-
-
+arrow = ''
+player_sprite = ''
+arrow_sprite = ''
+colors=[(255, 0, 0),(0, 255, 0),(0, 0, 255),(0, 255, 255)]
+player_sprites = [pygame.Surface((50, 50)),pygame.Surface((50, 50)),pygame.Surface((50, 50)),pygame.Surface((50, 50))]
+arrow_sprites = [pygame.Surface((20, 20)),pygame.Surface((20, 20)),pygame.Surface((20, 20)),pygame.Surface((20, 20))]
+for i in range(0,4):
+    player_sprites[i].fill(colors[i])
+    arrow_sprites[i].fill(colors[i])
 
 connected = False
 
@@ -27,19 +31,17 @@ def receive(socks):
     global connected, player
     data = socks.recv(4096)
     keyword, data = pickle.loads(data)
-
     if keyword == "CONNECTED":
         if connected == False:
             player = data
             connected = True
-            print(data.id)
-    elif keyword == "PLAYER":
+    elif keyword == "GAME_STATE":
         screen.fill((0, 0, 0))
-        for k,v in data.items():
-            player_sprites[v.id] = pygame.Surface((50, 50))
-            player_sprites[v.id].fill((0, 255, 255))
-            screen.blit(player_sprites[v.id], (v.xpos-12.5, v.ypos-12.5))
-            print(v.id,v.xpos,v.ypos)
+        players,arrows = data
+        for i in players:
+            screen.blit(player_sprites[i[0]], (i[1]-25, i[2]-25))
+        for i in arrows:
+            screen.blit(arrow_sprites[i[0]], (i[1]-12.5, i[2]-12.5))
 
 
 pygame.init()
@@ -50,14 +52,18 @@ player_move = False
 player_shoot = False
 player_leap = False
 running = True
-
+i=0
 while running:
+    sockets_list = [sys.stdin, client_socket]
+    read_sockets, write_socket, error_socket = select.select(sockets_list,[],[],0.001)
+    for socks in read_sockets:
+        if socks == client_socket:
+            receive(socks)
+
     if not connected:
         print("Connecting.....")
-        client_socket.sendall(pickle.dumps(("CONNECT",player))) 
-    if connected:
-        i=0
-        arrow = ''
+        client_socket.sendall(pickle.dumps(("CONNECT",player),pickle.HIGHEST_PROTOCOL)) 
+    if connected: 
         clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -70,8 +76,8 @@ while running:
                     dx = mouse_x - player.xpos
                     dy = mouse_y - player.ypos
                     arrow = Arrow(player.id,player.xpos,player.ypos,math.atan2(dy, dx),player.power,player.distance,player.speed)
+                    client_socket.sendall(pickle.dumps(("ARROW",arrow),pickle.HIGHEST_PROTOCOL))
                 if event.button == 3:
-                    print('here')
                     player_move = True
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     #compute the angle
@@ -96,31 +102,24 @@ while running:
                     
         if player_move:
             player.move()
-            client_socket.sendall(pickle.dumps(("PLAYER",player)))
+            client_socket.sendall(pickle.dumps(("PLAYER",player),pickle.HIGHEST_PROTOCOL))
             if mouse_x-1.0 < player.xpos < mouse_x+1.0 or mouse_y-1.0 < player.ypos < mouse_y+1.0:
                 player_move = False
         if player_shoot:
             arrow.move()
+            client_socket.sendall(pickle.dumps(("ARROW_MOVE",arrow),pickle.HIGHEST_PROTOCOL))
             if -20 > arrow.xpos or arrow.xpos > w or -20 > arrow.ypos or arrow.ypos > h:
+                client_socket.sendall(pickle.dumps(("ARROW_END",arrow.playerId)))
                 player_shoot = False
-                arrow = ''
             elif math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
+                client_socket.sendall(pickle.dumps(("ARROW_END",arrow.playerId),pickle.HIGHEST_PROTOCOL))
                 player_shoot = False
-                arrow = ''
         if player_leap:
+            player_move = False
             player.leap()
-            client_socket.sendall(pickle.dumps(("PLAYER",player)))
+            client_socket.sendall(pickle.dumps(("PLAYER",player),pickle.HIGHEST_PROTOCOL))
             if i==8:
                 player_leap = False
-            i+=1        
-        
-        
-        if(arrow!=''):
-            screen.blit(arrow_sprite, (arrow.xpos+2.5, arrow.ypos+2.5))
-    
-    sockets_list = [sys.stdin, client_socket]
-    read_sockets, write_socket, error_socket = select.select(sockets_list,[],[],1)
-    for socks in read_sockets:
-        if socks == client_socket:
-            receive(socks)
+                i = 0
+            i+=1
     pygame.display.update()
