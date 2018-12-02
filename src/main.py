@@ -35,13 +35,15 @@ def receive(socks):
         if connected == False:
             player = data
             connected = True
+    elif keyword == "ARROW_HIT":
+        player_shoot = False
     elif keyword == "GAME_STATE":
         screen.fill((0, 0, 0))
         players,arrows = data
         for i in players:
-            screen.blit(player_sprites[i[0]], (i[1]-25, i[2]-25))
+            screen.blit(player_sprites[i[0]], (i[1], i[2]))
         for i in arrows:
-            screen.blit(arrow_sprites[i[0]], (i[1]-12.5, i[2]-12.5))
+            screen.blit(arrow_sprites[i[0]], (i[1], i[2]))
 
 
 pygame.init()
@@ -53,6 +55,8 @@ player_shoot = False
 player_leap = False
 running = True
 i=0
+arrowCd = 0
+leapCd = 0
 while running:
     sockets_list = [sys.stdin, client_socket]
     read_sockets, write_socket, error_socket = select.select(sockets_list,[],[],0.001)
@@ -69,7 +73,8 @@ while running:
             if event.type == pygame.QUIT:
                 raise SystemExit
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
+                if event.button == 1 and arrowCd == 0:
+                    arrowCd = 250
                     player_shoot = True
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     #compute the angle
@@ -87,7 +92,8 @@ while running:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                elif event.key == pygame.K_e:
+                elif event.key == pygame.K_e and leapCd==0:
+                    leapCd = 500
                     player_move = False
                     player_leap = True
                     i=0
@@ -122,4 +128,9 @@ while running:
                 player_leap = False
                 i = 0
             i+=1
+        if(arrowCd!=0):
+            arrowCd-=1
+        if(leapCd!=0):
+            leapCd-=1
+        
     pygame.display.update()

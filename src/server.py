@@ -16,9 +16,8 @@ IN_PROGRESS = 3
 
 players={}
 arrows={}
-num_players=4
+num_players=2
 num_arrows=0
-
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('localhost', 10000)
 server_socket.bind(server_address)
@@ -26,6 +25,15 @@ server_socket.bind(server_address)
 def broadcast(keyword, data):
     for k,v in players.items():
         server_socket.sendto(pickle.dumps((keyword,data),pickle.HIGHEST_PROTOCOL),v.address)
+def checkHit(data):
+    for k,v in players.items():
+        if k == data.playerId:
+            continue
+        if not (data.xpos>v.xpos+40 or data.xpos+20<v.xpos or data.ypos>v.ypos+40 or data.ypos+20<v.ypos):
+            v.hp -= math.sqrt(players[data.playerId].power) * 34
+            print(v.hp)
+            return True
+    return False
 
 gameState = WAITING_FOR_PLAYERS
 print("SERVER START")
@@ -52,8 +60,12 @@ while True:
         if(keyword == "ARROW"):
             arrows[data.playerId] = data
         if(keyword == "ARROW_MOVE"):
-            arrows[data.playerId].xpos = data.xpos
-            arrows[data.playerId].ypos = data.ypos
+            if data.playerId in arrows.keys():
+                arrows[data.playerId].xpos = data.xpos
+                arrows[data.playerId].ypos = data.ypos
+                if(checkHit(data)):
+                    arrows.pop(data.playerId,None)
+                    server_socket.sendto(pickle.dumps(("ARROW_HIT",'')),address)
         if(keyword == "ARROW_END"):
             arrows.pop(data,None)
         broadcast("GAME_STATE",([(p.id,p.xpos,p.ypos) for k,p in players.items()],[(a.playerId,a.xpos,a.ypos) for k,a in arrows.items()]))
