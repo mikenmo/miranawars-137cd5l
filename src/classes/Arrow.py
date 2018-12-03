@@ -1,13 +1,13 @@
 from classes.Player import *
 class Arrow:
-    def __init__(self,playerId,xpos,ypos,angle, power, distance, speed):
+    def __init__(self,playerId,xpos,ypos, power, distance, speed):
         self.playerId = playerId
         self.arrowId = ''
         self.xpos = xpos
         self.startx = xpos
         self.ypos = ypos
         self.starty = ypos
-        self.angle = angle
+        self.angle = ''
         self.power = power
         self.distance = distance
         self.speed = speed

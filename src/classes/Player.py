@@ -7,8 +7,7 @@ class Player:
     POWER = 1
     DISTANCE = 2
     SPEED = 3
-    def __init__(self,name,xpos,ypos):
-        self.id = ''
+    def __init__(self,name,xy):
         self.address = ''
         self.name = name
         self.hp = 100
@@ -16,14 +15,18 @@ class Player:
         self.lvl = 1
         self.upgrades = 1
         self.kills = 0
-        self.xpos = xpos
-        self.ypos = ypos
+        self.xpos = xy[0]
+        self.ypos = xy[1]
+        self.destx = xy[0]
+        self.desty = xy[1]
         self.angle = 0
         self.ms = 5
         self.power = 1
         self.distance = 1
         self.speed = 1
-
+        self.arrowCd = False
+        self.leapCd = False
+        self.moving = False
     def arrowStats(self):
         return({"power":self.power,"distance":self.distance,"speed":self.speed})
     def upgradeArrow(self,upgradeType):
