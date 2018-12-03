@@ -26,13 +26,14 @@ players={}
 arrows={}
 init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
 
-num_players=4
+
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('localhost', 10000)
 server_socket.bind(server_address)
+
+num_players=int(input("NUMBER OF PLAYERS: "))
+
 gameState = WAITING_FOR_PLAYERS
-
-
 def broadcast(keyword, data):
     for k,v in players.items():
         server_socket.sendto(pickle.dumps((keyword,data),pickle.HIGHEST_PROTOCOL),v.address)
@@ -41,8 +42,6 @@ def broadcast(keyword, data):
 def playerCheck(playerId):
     global players
     if not(players[playerId].xpos>players[playerId].destx+50 or players[playerId].xpos+PLAYER_SIZE<players[playerId].destx or players[playerId].ypos>players[playerId].desty+50 or players[playerId].ypos+PLAYER_SIZE<players[playerId].desty):
-        print(players[playerId].xpos,players[playerId].destx,players[playerId].ypos,players[playerId].desty)
-        print("HERE")
         return False
     # if(0 > plac
     return True
@@ -59,20 +58,20 @@ def playerMoving(playerId):
 
 
 #condition to stop arrow thread
-def arrowCheck(arrow):
+def arrowCheck(playerId):
     global players
     #check if boundary
-    if 0 > arrow.xpos or arrow.xpos > WIDTH or 0 > arrow.ypos or arrow.ypos > HEIGHT:
+    if 0 > arrows[playerId].xpos or arrows[playerId].xpos > WIDTH or 0 > arrows[playerId].ypos or arrows[playerId].ypos > HEIGHT:
         return(False)
     #check if maximum distance
-    elif math.sqrt((arrow.xpos-arrow.startx)**2 + (arrow.ypos-arrow.starty)**2) > arrow.distance*100+500:
+    elif math.sqrt((arrows[playerId].xpos-arrows[playerId].startx)**2 + (arrows[playerId].ypos-arrows[playerId].starty)**2) > arrows[playerId].distance*100+500:
         return(False)
     #check if it hits player
     for k,v in players.items():
-        if k == data.playerId:
+        if k == playerId:
             continue
-        if not (data.xpos>v.xpos+PLAYER_SIZE or data.xpos+ARROW_SIZE<v.xpos or data.ypos>v.ypos+PLAYER_SIZE or data.ypos+ARROW_SIZE<v.ypos):
-            v.hp -= math.sqrt(players[data.playerId].power) * 34
+        if not (arrows[playerId].xpos>v.xpos+PLAYER_SIZE or arrows[playerId].xpos+ARROW_SIZE<v.xpos or arrows[playerId].ypos>v.ypos+PLAYER_SIZE or arrows[playerId].ypos+ARROW_SIZE<v.ypos):
+            v.hp -= math.sqrt(players[playerId].power) * 34
             print(v.hp)
             return False
     return(True)
@@ -85,10 +84,10 @@ def arrowMoving(playerId,mouse_x,mouse_y):
     dx = mouse_x - players[playerId].xpos
     dy = mouse_y - players[playerId].ypos
     arrows[playerId].angle = math.atan2(dy, dx)
-    while arrowCheck(arrows[playerId]):
+    while arrowCheck(playerId):
         arrows[playerId].move()
         broadcast("ARROW",(playerId,arrows[playerId].xpos,arrows[playerId].ypos))
-        time.sleep(0.1)
+        time.sleep(0.01)
     #remove arrow from game
     arrows.pop(playerId)
     broadcast("ARROW_DONE",playerId)
@@ -138,14 +137,15 @@ def receiver():
                 arrow = Arrow(playerId,players[playerId].xpos,players[playerId].ypos, players[playerId].power, players[playerId].distance, players[playerId].speed)
                 #change arrow lists
                 arrows[playerId] = arrow
+                players[playerId].arrowCd = True
                 broadcast("ARROW_ADDED",(playerId,arrow))
                 #arrow thread
                 aThread = threading.Thread(target=arrowMoving,name="aThread",args=[playerId,mouse_x,mouse_y])
                 aThread.start()
                 #arrow cooldown
-                players[playerId].arrowCd = True
-                cdTimer = threading.Timer(5.0,arrowCooldown(playerId))
+                cdTimer = threading.Timer(5.0,arrowCooldown,[playerId])
                 cdTimer.start()
+
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()

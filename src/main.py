@@ -36,8 +36,10 @@ for i in range(0,4):
 
 connected = False
 gameStart = False
+exited = False
 def receiver():
-    while True:
+    global exited
+    while not exited:
         global connected, playerId, players, arrows, gameStart, client_socket
         data = client_socket.recv(4096)
         keyword, data = pickle.loads(data)
@@ -59,6 +61,9 @@ def receiver():
             arrows[p_id].ypos = ypos
         if keyword == "ARROW_ADDED":
             arrows[data[0]] = data[1]
+            print(data[0])
+            players[data[0]].arrowCd = True
+            print(players[data[0]].arrowCd)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -76,7 +81,6 @@ player_shoot = False
 player_leap = False
 running = True
 i=0
-arrowCd = 0
 leapCd = 0
 # font = pygame.font.SysFont(None, 25)
 # chatbox = pygame.Surface([640,480], pygame.SRCALPHA, 32)
@@ -98,10 +102,12 @@ while running:
             clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    exited = True
                     raise SystemExit
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if arrReady and arrowCd == 0:
+                        print(players[playerId].arrowCd)
+                        if arrReady and not players[playerId].arrowCd:
                             mouse_x, mouse_y = pygame.mouse.get_pos()
                             client_socket.sendall(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
                             arrReady = False
@@ -142,10 +148,6 @@ while running:
                     player_leap = False
                     i = 0
                 i+=1
-            if(arrowCd!=0):
-                arrowCd-=1
-            if(leapCd!=0):
-                leapCd-=1
             screen.fill((0, 0, 0))
             for k,v in players.items():
                 screen.blit(player_sprites[k], (v.xpos, v.ypos))
