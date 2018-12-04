@@ -68,6 +68,30 @@ def receiver():
             arrows.pop(data)
         if keyword == "ARROW_READY":
             players[data].arrowCd = False
+        if keyword == "UPGRADED_POWER":
+            # unpack/retrieve data
+            p_id, power, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow power
+            players[p_id].power = power
+            players[p_id].upgrades = upgrades
+            # print for debug
+            print(str(p_id) + "UP POW: " + str(players[p_id].power))
+        if keyword == "UPGRADED_DISTANCE":
+            # unpack/retrieve data
+            p_id, distance, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow distance
+            players[p_id].distance = distance
+            players[p_id].upgrades = upgrades
+            # print for debug
+            print(str(p_id) + "UP DST: " + str(players[p_id].distance))
+        if keyword == "UPGRADED_SPEED":
+            # unpack/retrieve data
+            p_id, speed, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow speed
+            players[p_id].speed = speed
+            players[p_id].upgrades = upgrades
+            # print for debug
+            print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
     
     
         
@@ -133,12 +157,22 @@ while running:
                     elif event.key == pygame.K_w:
                         arrReady = True
                     
-                    # elif event.key == pygame.K_z:
-                    #     player.power +=1
-                    # elif event.key == pygame.K_x:
-                    #     player.distance +=1
-                    # elif event.key == pygame.K_c:
-                    #     player.speed +=1
+                    if players[playerId].upgrades > 0:
+                        if event.key == pygame.K_z:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL))
+                        elif event.key == pygame.K_x:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL))
+                        elif event.key == pygame.K_c:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
                         
             if player_leap:
                 player_move = False
