@@ -98,7 +98,6 @@ def arrowCooldown(playerId):
     broadcast("ARROW_READY",playerId)
 
 
-
 def receiver():
     while True:
         global players,arrows,gameState
@@ -145,6 +144,30 @@ def receiver():
                 #arrow cooldown
                 cdTimer = threading.Timer(5.0,arrowCooldown,[playerId])
                 cdTimer.start()
+            if(keyword == "UPGRADE_POWER"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow power
+                players[playerId].power += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_POWER", (playerId, players[playerId].power, players[playerId].upgrades))
+            if(keyword == "UPGRADE_DISTANCE"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow distance
+                players[playerId].distance += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_DISTANCE", (playerId, players[playerId].distance, players[playerId].upgrades))
+            if(keyword == "UPGRADE_SPEED"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow speed
+                players[playerId].speed += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_SPEED", (playerId, players[playerId].speed, players[playerId].upgrades))
 
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
