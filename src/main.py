@@ -13,8 +13,15 @@ from classes.Arrow import *
 
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
-client_socket.connect(server_address)
+try:
+    server_address = (sys.argv[1], 10000)
+except IndexError:
+    print("Correct usage: python3 main.py <server_ip_address>")
+    raise SystemExit
+try:
+    client_socket.connect(server_address)
+except:
+    raise SystemExit
 
 arrow = ''
 
@@ -48,7 +55,7 @@ def receiver():
                 playerId = data[0]
                 connected = True
             players = data[1]
-            print("%s connected." % players[data[0]].name)
+            print("%s connected. player ID: %i" % (players[data[0]].name, data[0]))
         if keyword == "GAME_START":
             gameStart = True
         if keyword == "PLAYER":
@@ -61,9 +68,9 @@ def receiver():
             arrows[p_id].ypos = ypos
         if keyword == "ARROW_ADDED":
             arrows[data[0]] = data[1]
-            print(data[0])
+            # print(data[0])
             players[data[0]].arrowCd = True
-            print(players[data[0]].arrowCd)
+            # print(players[data[0]].arrowCd)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -75,7 +82,7 @@ def receiver():
             players[p_id].power = power
             players[p_id].upgrades = upgrades
             # print for debug
-            print(str(p_id) + "UP POW: " + str(players[p_id].power))
+            # print(str(p_id) + "UP POW: " + str(players[p_id].power))
         if keyword == "UPGRADED_DISTANCE":
             # unpack/retrieve data
             p_id, distance, upgrades = data[0], data[1], data[2]
@@ -83,7 +90,7 @@ def receiver():
             players[p_id].distance = distance
             players[p_id].upgrades = upgrades
             # print for debug
-            print(str(p_id) + "UP DST: " + str(players[p_id].distance))
+            # print(str(p_id) + "UP DST: " + str(players[p_id].distance))
         if keyword == "UPGRADED_SPEED":
             # unpack/retrieve data
             p_id, speed, upgrades = data[0], data[1], data[2]
@@ -91,7 +98,7 @@ def receiver():
             players[p_id].speed = speed
             players[p_id].upgrades = upgrades
             # print for debug
-            print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
+            # print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
     
     
         
@@ -117,7 +124,6 @@ leapCd = 0
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-
 arrReady = False
 client_socket.sendall(pickle.dumps(("CONNECT",input("Enter name: ")),pickle.HIGHEST_PROTOCOL))
 while running:
@@ -139,7 +145,7 @@ while running:
                         if arrReady:
                             arrReady = False
                         mouse_x, mouse_y = pygame.mouse.get_pos()
-                        print(playerId)
+                        # print(playerId)
                         client_socket.sendall(pickle.dumps(("PLAYER",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
 
                 elif event.type == pygame.KEYDOWN:
@@ -189,3 +195,4 @@ while running:
                 screen.blit(arrow_sprites[k], (v.xpos, v.ypos))
     pygame.display.update()
 pygame.quit()
+sys.exit(0)

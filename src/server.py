@@ -28,10 +28,18 @@ init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
-server_socket.bind(server_address)
+try:
+    server_address = (sys.argv[1], 10000)
+except IndexError:
+    print("Correct usage: python3 server.py <server_ip_address> <num_of_players>")
+    raise SystemExit
+try:
+    server_socket.connect(server_address)
+except:
+    raise SystemExit
 
-num_players=int(input("NUMBER OF PLAYERS: "))
+
+num_players=int(sys.argv[2])
 
 gameState = WAITING_FOR_PLAYERS
 def broadcast(keyword, data):
