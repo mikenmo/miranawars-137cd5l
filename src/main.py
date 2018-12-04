@@ -14,6 +14,49 @@ import select
 from classes.Player import *
 from classes.Arrow import *
 
+# constants
+WAITING         = 0
+GAME_START      = 1
+GAME_END        = 2
+
+# dictionaries
+playerId        = -1
+players         = {}
+arrows          = {}
+
+# flags and state identifier
+connected       = False
+player_leap     = False
+arrReady        = False
+exited          = False
+running         = True
+gameState       = WAITING
+
+
+# create square sprites
+player_sprites  =   [   
+                        pygame.Surface((50, 50)),
+                        pygame.Surface((50, 50)),
+                        pygame.Surface((50, 50)),
+                        pygame.Surface((50, 50))
+                    ]
+arrow_sprites   =   [   
+                        pygame.Surface((20, 20)),
+                        pygame.Surface((20, 20)),
+                        pygame.Surface((20, 20)),
+                        pygame.Surface((20, 20))
+                    ]
+colors          =   [   
+                        (255, 0, 0),
+                        (0, 255, 0),
+                        (0, 0, 255),
+                        (0, 255, 255)
+                    ]
+for i in range(0,4):
+    player_sprites[i].fill(colors[i])
+    arrow_sprites[i].fill(colors[i])
+
+# establish connection
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
     server_address = (sys.argv[1], 10000)
@@ -25,31 +68,13 @@ try:
 except:
     raise SystemExit
 
-arrow = ''
+def canLevelUp(playerId):
+    if players[playerId].xp % 100 == 0:
+        print("rock en rol")
+        return True
+    print("sorry beh")
+    return False
 
-playerId = -1
-players = {}
-arrows = {}
-
-WAITING = 0
-GAME_START = 1
-GAME_END = 2
-
-player_sprite = ''
-arrow_sprite = ''
-colors=[(255, 0, 0),(0, 255, 0),(0, 0, 255),(0, 255, 255)]
-player_sprites = [pygame.Surface((50, 50)),pygame.Surface((50, 50)),pygame.Surface((50, 50)),pygame.Surface((50, 50))]
-arrow_sprites = [pygame.Surface((20, 20)),pygame.Surface((20, 20)),pygame.Surface((20, 20)),pygame.Surface((20, 20))]
-for i in range(0,4):
-    player_sprites[i].fill(colors[i])
-    arrow_sprites[i].fill(colors[i])
-
-
-
-connected = False
-player_leap = False
-gameState = WAITING
-exited = False
 def receiver():
     global exited
     while not exited:
@@ -88,6 +113,8 @@ def receiver():
             p_id,hits,xp,k_id,hp = data
             players[p_id].hits = hits
             players[p_id].xp = xp
+            if canLevelUp(p_id):
+                players[p_id].levelUp()
             players[k_id].hp = hp
         if keyword == "ARROW_DONE":
             arrows.pop(data)
@@ -124,27 +151,24 @@ def receiver():
             players[p_id].upgrades = upgrades
             # print for debug
             print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
+        if keyword == "INCREASE_XP":
+            p_id, xp = data[0], data[1]
+            players[p_id].xp = xp
+            print("{} XP up by {}".format(p_id, xp))
+            if canLevelUp(p_id):
+                players[p_id].levelUp()
+                print("{} level up!".format(p_id))
 
-
-pygame.init()
-screen = pygame.display.set_mode((500,500),pygame.HWSURFACE)
-clock = pygame.time.Clock()
-w, h = pygame.display.get_surface().get_size()
-running = True
-i=0
-# font = pygame.font.SysFont(None, 25)
-# chatbox = pygame.Surface([640,480], pygame.SRCALPHA, 32)
-# chatbox = chatbox.convert_alpha()
-
-# def openChatbox():
-#     screen_text = font.render(msg,True,(255,255,255))
-#     screen.blit(screen_text,)
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-arrReady = False
 client_socket.sendall(pickle.dumps(("CONNECT",input("Enter name: ")),pickle.HIGHEST_PROTOCOL))
+
+pygame.init()
+screen = pygame.display.set_mode((500,500),pygame.HWSURFACE)
+clock = pygame.time.Clock()
+i = 0
 while running:
     if connected:
         if gameState == GAME_START:
@@ -156,6 +180,9 @@ while running:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if players[playerId].dead:
                         print("You are still dead...")
+                        break
+                    if players[playerId].stunned:
+                        print("You are still stunned...")
                         break
                     # left click detected
                     if event.button == 1:
@@ -173,6 +200,9 @@ while running:
                 elif event.type == pygame.KEYDOWN:
                     if players[playerId].dead:
                         print("You are still dead...")
+                        break
+                    if players[playerId].stunned:
+                        print("You are still stunned...")
                         break
                     if arrReady and event.key != pygame.K_w:
                         arrReady = False
@@ -210,11 +240,15 @@ while running:
                     player_leap = False
                     i = 0
                 i+=1
+
+            # clear screen
             screen.fill((0, 0, 0))
+            # repaint player sprites
             for k,v in players.items():
                 if v.dead:
                     continue
                 screen.blit(player_sprites[k], (v.xpos, v.ypos))
+            # repaint arrow sprites
             for k,v in arrows.items():
                 screen.blit(arrow_sprites[k], (v.xpos, v.ypos))
         if gameState == GAME_END:
