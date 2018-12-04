@@ -1,16 +1,18 @@
-import pygame
-import math
-import socket
-import threading
+# disable intro message of pygame
+import contextlib
+with contextlib.redirect_stdout(None):
+    import pygame
 try:
    import cPickle as pickle
 except:
    import pickle
+import math
+import socket
+import threading
 import sys
 import select
 from classes.Player import *
 from classes.Arrow import *
-
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
@@ -45,6 +47,7 @@ for i in range(0,4):
 
 
 connected = False
+player_leap = False
 gameState = WAITING
 exited = False
 def receiver():
@@ -104,7 +107,7 @@ def receiver():
             players[p_id].power = power
             players[p_id].upgrades = upgrades
             # print for debug
-            # print(str(p_id) + "UP POW: " + str(players[p_id].power))
+            print(str(p_id) + "UP POW: " + str(players[p_id].power))
         if keyword == "UPGRADED_DISTANCE":
             # unpack/retrieve data
             p_id, distance, upgrades = data[0], data[1], data[2]
@@ -112,7 +115,7 @@ def receiver():
             players[p_id].distance = distance
             players[p_id].upgrades = upgrades
             # print for debug
-            # print(str(p_id) + "UP DST: " + str(players[p_id].distance))
+            print(str(p_id) + "UP DST: " + str(players[p_id].distance))
         if keyword == "UPGRADED_SPEED":
             # unpack/retrieve data
             p_id, speed, upgrades = data[0], data[1], data[2]
@@ -120,7 +123,7 @@ def receiver():
             players[p_id].speed = speed
             players[p_id].upgrades = upgrades
             # print for debug
-            # print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
+            print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
 
 
 pygame.init()
@@ -154,11 +157,13 @@ while running:
                     if players[playerId].dead:
                         print("You are still dead...")
                         break
+                    # left click detected
                     if event.button == 1:
                         if arrReady and not players[playerId].arrowCd:
                             mouse_x, mouse_y = pygame.mouse.get_pos()
                             client_socket.sendall(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
                             arrReady = False
+                    # right click detected
                     if event.button == 3:
                         if arrReady:
                             arrReady = False
