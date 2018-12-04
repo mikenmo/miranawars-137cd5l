@@ -33,18 +33,17 @@ init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = (socket.gethostbyname(socket.getfqdn()), 10000)
+server_socket.bind(server_address)
+
+# show host ip address
+print("Hosting at {}".format(server_address[0]))
+
 try:
-    server_address = (sys.argv[1], 10000)
+    num_players=int(sys.argv[1])
 except IndexError:
-    print("Correct usage: python3 server.py <server_ip_address> <num_of_players>")
+    print("Correct usage: python3 server.py <num_of_players>")
     raise SystemExit
-try:
-    server_socket.bind(server_address)
-except:
-    raise SystemExit
-
-
-num_players=int(sys.argv[2])
 
 gameState = WAITING_FOR_PLAYERS
 def broadcast(keyword, data):
@@ -120,7 +119,7 @@ def arrowCheck(playerId):
                 respawnTimer.start()
                 players[k].dead = True
                 broadcast("PLAYER_KILLED",k)
-            print(players[playerId].xp)
+            print("Player "+players[playerId].name+" new XP: "+players[playerId].xp)
             broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))
             return False
     return(True)

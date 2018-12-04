@@ -1,4 +1,3 @@
-import pygame
 import math
 from classes.Arrow import *
 
