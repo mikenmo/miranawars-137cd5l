@@ -14,13 +14,18 @@ from classes.Arrow import *
 
 WAITING_FOR_PLAYERS = 1
 GAME_START = 2
-IN_PROGRESS = 3
+GAME_END = 3
 
 PLAYER_SIZE = 50
 ARROW_SIZE = 20
 
 HEIGHT = 500
 WIDTH = 500
+
+GAME_DURATION = 300  #in seconds
+RESPAWN_TIME = 10
+ARROW_COOLDOWN = 4.0
+LEAP_COOLDOWN = 4.0
 
 players={}
 arrows={}
@@ -51,6 +56,8 @@ def playerCheck(playerId):
     global players
     if not(players[playerId].xpos>players[playerId].destx+50 or players[playerId].xpos+PLAYER_SIZE<players[playerId].destx or players[playerId].ypos>players[playerId].desty+50 or players[playerId].ypos+PLAYER_SIZE<players[playerId].desty):
         return False
+    if players[playerId].leaping:
+        return False
     # if(0 > plac
     return True
 
@@ -64,6 +71,28 @@ def playerMoving(playerId):
         time.sleep(0.01)
     players[playerId].moving = False
 
+def playerLeaping(playerId):
+    global players
+    players[playerId].leaping = True
+    for i in range(0,10):
+        players[playerId].leap()
+        broadcast("PLAYER",(playerId,players[playerId].xpos,players[playerId].ypos))
+        time.sleep(0.01)
+    players[playerId].leaping = False
+    
+def leapCooldown(playerId):
+    global players
+    players[playerId].leapCd = False
+    broadcast("LEAP_READY",playerId)
+
+def playerRespawning(playerId):
+    global players
+    players[playerId].dead = False
+    players[playerId].xpos = init_pos[playerId][0]
+    players[playerId].ypos = init_pos[playerId][1]
+    players[playerId].hp = 100
+    print("%s respawned." % (players[playerId].name))
+    broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos,players[playerId].hp))
 
 #condition to stop arrow thread
 def arrowCheck(playerId):
@@ -76,11 +105,23 @@ def arrowCheck(playerId):
         return(False)
     #check if it hits player
     for k,v in players.items():
-        if k == playerId:
+        if k == playerId or v.dead == True:
             continue
         if not (arrows[playerId].xpos>v.xpos+PLAYER_SIZE or arrows[playerId].xpos+ARROW_SIZE<v.xpos or arrows[playerId].ypos>v.ypos+PLAYER_SIZE or arrows[playerId].ypos+ARROW_SIZE<v.ypos):
             v.hp -= math.sqrt(players[playerId].power) * 34
-            print(v.hp)
+            players[playerId].hits += 1
+            players[playerId].xp += 20
+            print("Player %s's arrow hit player %s.\nPlayer %s's hp: %d" % (players[playerId].name, v.name, v.name, v.hp))
+            if(v.hp < 0):
+                players[playerId].xp += 30
+                players[playerId].kills += 1
+                print("%s died.\nRespawning in 10 seconds...." % v.name)
+                respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
+                respawnTimer.start()
+                players[k].dead = True
+                broadcast("PLAYER_KILLED",k)
+            print(players[playerId].xp)
+            broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))
             return False
     return(True)
 
@@ -106,6 +147,11 @@ def arrowCooldown(playerId):
     broadcast("ARROW_READY",playerId)
 
 
+def endGame():
+    global gameState
+    gameState = GAME_END
+    print("Game has ended...")
+
 def receiver():
     while True:
         global players,arrows,gameState
@@ -124,6 +170,8 @@ def receiver():
                     print("Game State: START")
                     gameState = GAME_START
                     broadcast("GAME_START",'')
+                    gameTimer = threading.Timer(GAME_DURATION,endGame,[])
+                    gameTimer.start()
 
         elif gameState == GAME_START:
             if(keyword == "PLAYER"):
@@ -150,7 +198,15 @@ def receiver():
                 aThread = threading.Thread(target=arrowMoving,name="aThread",args=[playerId,mouse_x,mouse_y])
                 aThread.start()
                 #arrow cooldown
-                cdTimer = threading.Timer(5.0,arrowCooldown,[playerId])
+                cdTimer = threading.Timer(ARROW_COOLDOWN,arrowCooldown,[playerId])
+                cdTimer.start()
+            if(keyword == "LEAP"):
+                playerId = data
+                players[playerId].leapCd = True
+                broadcast("LEAP_CD",playerId)
+                lThread = threading.Thread(target=playerLeaping,name="lThread",args=[playerId])
+                lThread.start()
+                cdTimer = threading.Timer(LEAP_COOLDOWN,leapCooldown,[playerId])
                 cdTimer.start()
             if(keyword == "UPGRADE_POWER"):
                 # unpack/retrieve data
@@ -177,6 +233,8 @@ def receiver():
                 # inform all other clients (including the client holding this player) the upgrade
                 broadcast("UPGRADED_SPEED", (playerId, players[playerId].speed, players[playerId].upgrades))
 
+        elif gameState == GAME_END:
+            broadcast("GAME_END",players)
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
