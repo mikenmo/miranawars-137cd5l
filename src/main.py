@@ -127,7 +127,7 @@ while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exited = True
-                    raise SystemExit
+                    running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         print(players[playerId].arrowCd)
@@ -188,3 +188,4 @@ while running:
             for k,v in arrows.items():
                 screen.blit(arrow_sprites[k], (v.xpos, v.ypos))
     pygame.display.update()
+pygame.quit()
