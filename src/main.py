@@ -13,8 +13,15 @@ from classes.Arrow import *
 
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
-client_socket.connect(server_address)
+try:
+    server_address = (sys.argv[1], 10000)
+except IndexError:
+    print("Correct usage: python3 main.py <server_ip_address>")
+    raise SystemExit
+try:
+    client_socket.connect(server_address)
+except:
+    raise SystemExit
 
 arrow = ''
 
@@ -52,7 +59,7 @@ def receiver():
                 playerId = data[0]
                 connected = True
             players = data[1]
-            print("%s connected." % players[data[0]].name)
+            print("%s connected. player ID: %i" % (players[data[0]].name, data[0]))
         if keyword == "GAME_START":
             gameState = GAME_START
         if keyword == "PLAYER":
@@ -90,8 +97,30 @@ def receiver():
         if keyword == "GAME_END":
             players = data
             gameState = GAME_END
-    
-        
+        if keyword == "UPGRADED_POWER":
+            # unpack/retrieve data
+            p_id, power, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow power
+            players[p_id].power = power
+            players[p_id].upgrades = upgrades
+            # print for debug
+            # print(str(p_id) + "UP POW: " + str(players[p_id].power))
+        if keyword == "UPGRADED_DISTANCE":
+            # unpack/retrieve data
+            p_id, distance, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow distance
+            players[p_id].distance = distance
+            players[p_id].upgrades = upgrades
+            # print for debug
+            # print(str(p_id) + "UP DST: " + str(players[p_id].distance))
+        if keyword == "UPGRADED_SPEED":
+            # unpack/retrieve data
+            p_id, speed, upgrades = data[0], data[1], data[2]
+            # upgrade this player's arrow speed
+            players[p_id].speed = speed
+            players[p_id].upgrades = upgrades
+            # print for debug
+            # print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
 
 
 pygame.init()
@@ -110,7 +139,6 @@ i=0
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
-
 
 arrReady = False
 client_socket.sendall(pickle.dumps(("CONNECT",input("Enter name: ")),pickle.HIGHEST_PROTOCOL))
@@ -152,12 +180,31 @@ while running:
                     elif event.key == pygame.K_w:
                         arrReady = True
                     
-                    elif event.key == pygame.K_z:
-                        player.power +=1
-                    elif event.key == pygame.K_x:
-                        player.distance +=1
-                    elif event.key == pygame.K_c:
-                        player.speed +=1
+                    if players[playerId].upgrades > 0:
+                        if event.key == pygame.K_z:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL))
+                        elif event.key == pygame.K_x:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL))
+                        elif event.key == pygame.K_c:
+                            # immediately decrement current upgrade points to avoid spamming
+                            players[playerId].upgrades -= 1
+                            # request upgrade from server
+                            client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
+                        
+            if player_leap:
+                player_move = False
+                player.leap()
+                client_socket.sendall(pickle.dumps(("PLAYER",player),pickle.HIGHEST_PROTOCOL))
+                if i==8:
+                    player_leap = False
+                    i = 0
+                i+=1
             screen.fill((0, 0, 0))
             for k,v in players.items():
                 if v.dead:
@@ -170,3 +217,4 @@ while running:
                 print("%s's score: %d" % (v.name,v.hits+v.kills*2))
     pygame.display.update()
 pygame.quit()
+sys.exit(0)

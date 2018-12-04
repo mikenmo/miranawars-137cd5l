@@ -33,10 +33,18 @@ init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('localhost', 10000)
-server_socket.bind(server_address)
+try:
+    server_address = (sys.argv[1], 10000)
+except IndexError:
+    print("Correct usage: python3 server.py <server_ip_address> <num_of_players>")
+    raise SystemExit
+try:
+    server_socket.connect(server_address)
+except:
+    raise SystemExit
 
-num_players=int(input("NUMBER OF PLAYERS: "))
+
+num_players=int(sys.argv[2])
 
 gameState = WAITING_FOR_PLAYERS
 def broadcast(keyword, data):
@@ -200,12 +208,33 @@ def receiver():
                 lThread.start()
                 cdTimer = threading.Timer(LEAP_COOLDOWN,leapCooldown,[playerId])
                 cdTimer.start()
-        
+            if(keyword == "UPGRADE_POWER"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow power
+                players[playerId].power += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_POWER", (playerId, players[playerId].power, players[playerId].upgrades))
+            if(keyword == "UPGRADE_DISTANCE"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow distance
+                players[playerId].distance += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_DISTANCE", (playerId, players[playerId].distance, players[playerId].upgrades))
+            if(keyword == "UPGRADE_SPEED"):
+                # unpack/retrieve data
+                playerId = data
+                # upgrade this player's arrow speed
+                players[playerId].speed += 1
+                players[playerId].upgrades -= 1
+                # inform all other clients (including the client holding this player) the upgrade
+                broadcast("UPGRADED_SPEED", (playerId, players[playerId].speed, players[playerId].upgrades))
+
         elif gameState == GAME_END:
             broadcast("GAME_END",players)
-
-
-
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
