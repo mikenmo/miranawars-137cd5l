@@ -12,25 +12,24 @@ except:
 from classes.Player import *
 from classes.Arrow import *
 
-WAITING_FOR_PLAYERS = 1
-GAME_START = 2
-GAME_END = 3
+# constants
+WAITING_FOR_PLAYERS     = 1
+GAME_START              = 2
+GAME_END                = 3
+PLAYER_SIZE             = 50
+ARROW_SIZE              = 20
+WIDTH                   = 500
+HEIGHT                  = 500
+GAME_DURATION           = 300 # in seconds
+RESPAWN_TIME            = 10
+ARROW_COOLDOWN          = 4.0
+LEAP_COOLDOWN           = 4.0
 
-PLAYER_SIZE = 50
-ARROW_SIZE = 20
+# dictionaries
+players                 = {}
+arrows                  = {}
 
-HEIGHT = 500
-WIDTH = 500
-
-GAME_DURATION = 300  #in seconds
-RESPAWN_TIME = 10
-ARROW_COOLDOWN = 4.0
-LEAP_COOLDOWN = 4.0
-
-players={}
-arrows={}
 init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
-
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = (socket.gethostbyname(socket.getfqdn()), 10000)
@@ -46,11 +45,13 @@ except IndexError:
     raise SystemExit
 
 gameState = WAITING_FOR_PLAYERS
+
+# send data to all clients including the sender
 def broadcast(keyword, data):
     for k,v in players.items():
         server_socket.sendto(pickle.dumps((keyword,data),pickle.HIGHEST_PROTOCOL),v.address)
 
-#condition to stop player thread
+# condition to stop player thread
 def playerCheck(playerId):
     global players
     if not(players[playerId].xpos>players[playerId].destx+50 or players[playerId].xpos+PLAYER_SIZE<players[playerId].destx or players[playerId].ypos>players[playerId].desty+50 or players[playerId].ypos+PLAYER_SIZE<players[playerId].desty):
@@ -60,7 +61,7 @@ def playerCheck(playerId):
     # if(0 > plac
     return True
 
-#thread to move player
+# thread to move player
 def playerMoving(playerId):
     global players
     players[playerId].moving = True
@@ -93,42 +94,58 @@ def playerRespawning(playerId):
     print("%s respawned." % (players[playerId].name))
     broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos,players[playerId].hp))
 
-#condition to stop arrow thread
+def canLevelUp(playerId):
+    if players[playerId].xp % 100 == 0:
+        # print for debug
+        print("CAN LEVEL UP!")
+        return True
+    # print for debug
+    print("SORRY CANNOT BE YET")
+    return False
+
+# condition to stop arrow thread
 def arrowCheck(playerId):
     global players
-    #check if boundary
+    # check if boundary
     if 0 > arrows[playerId].xpos or arrows[playerId].xpos > WIDTH or 0 > arrows[playerId].ypos or arrows[playerId].ypos > HEIGHT:
-        return(False)
-    #check if maximum distance
+        return False
+    # check if maximum distance
     elif math.sqrt((arrows[playerId].xpos-arrows[playerId].startx)**2 + (arrows[playerId].ypos-arrows[playerId].starty)**2) > arrows[playerId].distance*100+500:
-        return(False)
-    #check if it hits player
+        return False
+    # check if it hits player
     for k,v in players.items():
         if k == playerId or v.dead == True:
             continue
         if not (arrows[playerId].xpos>v.xpos+PLAYER_SIZE or arrows[playerId].xpos+ARROW_SIZE<v.xpos or arrows[playerId].ypos>v.ypos+PLAYER_SIZE or arrows[playerId].ypos+ARROW_SIZE<v.ypos):
-            v.hp -= math.sqrt(players[playerId].power) * 34
-            players[playerId].hits += 1
-            players[playerId].xp += 20
+            v.decreaseHP(math.sqrt(players[playerId].power) * 34)
+            players[playerId].increaseHits(1)
+            players[playerId].increaseXP(20)
+            if canLevelUp(playerId):
+                players[playerId].levelUp()
+            # print for debug
             print("Player %s's arrow hit player %s.\nPlayer %s's hp: %d" % (players[playerId].name, v.name, v.name, v.hp))
+            # playerId's arrow killed their opponent player
             if(v.hp < 0):
-                players[playerId].xp += 30
-                players[playerId].kills += 1
+                players[playerId].increaseXP(30)
+                if canLevelUp(playerId):
+                    players[playerId].levelUp()
+                players[playerId].increaseKills(1)
+                # print for debug
                 print("%s died.\nRespawning in 10 seconds...." % v.name)
                 respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
                 respawnTimer.start()
                 players[k].dead = True
                 broadcast("PLAYER_KILLED",k)
-            print("Player "+players[playerId].name+" new XP: "+players[playerId].xp)
+            # print for debug
+            print("Player "+players[playerId].name+" new XP: "+str(players[playerId].xp))
             broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))
             return False
-    return(True)
+    return True 
 
-
-#thread to move arrow
+# thread to move arrow
 def arrowMoving(playerId,mouse_x,mouse_y):
     global players,arrows
-    #compute the angle
+    # compute the angle
     dx = mouse_x - players[playerId].xpos
     dy = mouse_y - players[playerId].ypos
     arrows[playerId].angle = math.atan2(dy, dx)
@@ -136,15 +153,25 @@ def arrowMoving(playerId,mouse_x,mouse_y):
         arrows[playerId].move()
         broadcast("ARROW",(playerId,arrows[playerId].xpos,arrows[playerId].ypos))
         time.sleep(0.01)
-    #remove arrow from game
+    #r emove arrow from game
     arrows.pop(playerId)
     broadcast("ARROW_DONE",playerId)
-#set cooldown for arrow
+
+# set cooldown for arrow
 def arrowCooldown(playerId):
     global players
     players[playerId].arrowCd = False
     broadcast("ARROW_READY",playerId)
 
+def increaseXPAll():
+    global players
+    for k, v in players.items():
+        v.increaseXP(100)
+        print("{} XP up by 100!".format(k))
+        if canLevelUp(k):
+            players[k].levelUp()
+            print("{} level up!".format(k))
+        broadcast("INCREASE_XP", (k, 100))
 
 def endGame():
     global gameState
@@ -164,18 +191,20 @@ def receiver():
                 players[playerId].address = address
                 broadcast("CONNECTED",(playerId,players))
                 print('%s connected....' % player.name)
-            
                 if(len(players)==num_players):
                     print("Game State: START")
                     gameState = GAME_START
                     broadcast("GAME_START",'')
                     gameTimer = threading.Timer(GAME_DURATION,endGame,[])
+                                # Note: HARD CODED TIMER FOR NOW
+                    xpAddTimer = threading.Timer(5, increaseXPAll, [])
                     gameTimer.start()
+                    xpAddTimer.start()
 
         elif gameState == GAME_START:
             if(keyword == "PLAYER"):
                 playerId, mouse_x, mouse_y = data
-                #compute the angle
+                # compute the angle
                 dx = mouse_x - players[playerId].xpos
                 dy = mouse_y - players[playerId].ypos
                 players[playerId].destx = mouse_x
@@ -187,16 +216,16 @@ def receiver():
 
             if(keyword == "ARROW"):
                 playerId, mouse_x, mouse_y = data
-                #initialize arrow
+                # initialize arrow
                 arrow = Arrow(playerId,players[playerId].xpos,players[playerId].ypos, players[playerId].power, players[playerId].distance, players[playerId].speed)
-                #change arrow lists
+                # change arrow lists
                 arrows[playerId] = arrow
                 players[playerId].arrowCd = True
                 broadcast("ARROW_ADDED",(playerId,arrow))
-                #arrow thread
+                # arrow thread
                 aThread = threading.Thread(target=arrowMoving,name="aThread",args=[playerId,mouse_x,mouse_y])
                 aThread.start()
-                #arrow cooldown
+                # arrow cooldown
                 cdTimer = threading.Timer(ARROW_COOLDOWN,arrowCooldown,[playerId])
                 cdTimer.start()
             if(keyword == "LEAP"):
