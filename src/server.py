@@ -39,7 +39,7 @@ except IndexError:
     print("Correct usage: python3 server.py <server_ip_address> <num_of_players>")
     raise SystemExit
 try:
-    server_socket.connect(server_address)
+    server_socket.bind(server_address)
 except:
     raise SystemExit
 
