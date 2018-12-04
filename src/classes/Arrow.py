@@ -11,6 +11,7 @@ class Arrow:
         self.power = power
         self.distance = distance
         self.speed = speed
+        
     def move(self):
         self.xpos += self.speed * 6 * math.cos(self.angle)
         self.ypos += self.speed * 6 * math.sin(self.angle)
