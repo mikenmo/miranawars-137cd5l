@@ -29,16 +29,19 @@ class Player:
         self.moving = False
         self.leaping = False
         self.dead = False
+        self.stunned = False
+
     def arrowStats(self):
         return({"power":self.power,"distance":self.distance,"speed":self.speed})
-    def upgradeArrow(self,upgradeType):
-        self.upgrade-=1
-        if upgradeType == Arrow.POWER:
-            self.arrow.power+=1
-        elif upgradeType == Arrow.DISTANCE:
-            self.arrow.distance+=1
-        elif upgradeType == Arrow.SPEED:
-            self.arrow.speed+=1
+
+    def upgradePower(self):
+        self.power += 1
+
+    def upgradeDistance(self):
+        self.distance += 1
+
+    def upgradeSpeed(self):
+        self.speed += 1
 
     def move(self):
         self.xpos += self.ms * math.cos(self.angle)
@@ -48,3 +51,17 @@ class Player:
         self.xpos += 10 * math.cos(self.angle)
         self.ypos += 10 * math.sin(self.angle)
         
+    def increaseXP(self, xp):
+        self.xp += xp
+
+    def increaseHits(self, hits):
+        self.hits += hits
+
+    def increaseKills(self, kills):
+        self.kills += kills
+
+    def levelUp(self):
+        self.upgrades += 1
+
+    def decreaseHP(self, hp):
+        self.hp -= hp
