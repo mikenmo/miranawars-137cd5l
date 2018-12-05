@@ -14,6 +14,7 @@ class Player:
         self.lvl = 1
         self.upgrades = 1
         self.kills = 0
+        self.deaths = 0
         self.hits = 0
         self.xpos = xy[0]
         self.ypos = xy[1]
@@ -48,8 +49,8 @@ class Player:
         self.ypos += self.ms * math.sin(self.angle)
 
     def leap(self):
-        self.xpos += 10 * math.cos(self.angle)
-        self.ypos += 10 * math.sin(self.angle)
+        self.xpos += 15 * math.cos(self.angle)
+        self.ypos += 15 * math.sin(self.angle)
         
     def increaseXP(self, xp):
         self.xp += xp
@@ -65,3 +66,13 @@ class Player:
 
     def decreaseHP(self, hp):
         self.hp -= hp
+
+    def playerDied(self):
+        self.deaths += 1
+        self.dead = True
+    
+    def playerRespawned(self,xpos,ypos):
+        self.xpos = xpos
+        self.ypos = ypos
+        self.hp = 100
+        self.dead = False

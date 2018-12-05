@@ -56,6 +56,12 @@ colors          =   [
                         (0, 0, 255),
                         (0, 255, 255)
                     ]
+
+active_sprite = pygame.Surface((50, 50))
+active_sprite.fill((255,255,255))
+inactive_sprite = pygame.Surface((50, 50))
+inactive_sprite.fill((150,150,150))
+
 for i in range(0,4):
     player_sprites[i].fill(colors[i])
     arrow_sprites[i].fill(colors[i])
@@ -98,14 +104,11 @@ def receiver():
             p_id,xpos,ypos = data
             players[p_id].xpos = xpos
             players[p_id].ypos = ypos
-        if keyword == "PLAYER_DEAD":
-            players[data].dead = True
+        if keyword == "PLAYER_DIED":
+            players[data].playerDied()
         if keyword == "PLAYER_RESPAWNED":
-            p_id,xpos,ypos,hp = data
-            players[p_id].dead = False
-            players[p_id].xpos = xpos
-            players[p_id].ypos = ypos
-            players[p_id].hp = hp
+            p_id,xpos,ypos = data
+            players[p_id].playerRespawned(xpos,ypos)
         if keyword == "ARROW":
             p_id,xpos,ypos = data
             arrows[p_id].xpos = xpos
@@ -162,7 +165,6 @@ def receiver():
             if canLevelUp(p_id):
                 players[p_id].levelUp()
                 print("{} level up!".format(p_id))
-
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
@@ -247,6 +249,7 @@ while running:
                             # request upgrade from server
                             client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
                     chat_input.handle_event( event )
+
             if player_leap:
                 player_move = False
                 player.leap()
@@ -266,6 +269,16 @@ while running:
             # repaint arrow sprites
             for k,v in arrows.items():
                 screen.blit(arrow_sprites[k], (v.xpos, v.ypos))
+            
+            if not players[playerId].arrowCd:
+                screen.blit(active_sprite, (WIDTH-110,HEIGHT-50))
+            else:
+                screen.blit(inactive_sprite, (WIDTH-110,HEIGHT-50))
+
+            if not players[playerId].leapCd:
+                screen.blit(active_sprite, (WIDTH-50,HEIGHT-50))
+            else:
+                screen.blit(inactive_sprite, (WIDTH-50,HEIGHT-50))
         if gameState == GAME_END:
             for k,v in players.items():
                 print("%s's score: %d" % (v.name,v.hits+v.kills*2))

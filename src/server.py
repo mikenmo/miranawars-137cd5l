@@ -88,12 +88,9 @@ def leapCooldown(playerId):
 
 def playerRespawning(playerId):
     global players
-    players[playerId].dead = False
-    players[playerId].xpos = init_pos[playerId][0]
-    players[playerId].ypos = init_pos[playerId][1]
-    players[playerId].hp = 100
+    players[playerId].playerRespawned(init_pos[playerId][0],init_pos[playerId][1])
     print("%s respawned." % (players[playerId].name))
-    broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos,players[playerId].hp))
+    broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos))
 
 def canLevelUp(playerId):
     if players[playerId].xp % 100 == 0:
@@ -135,8 +132,8 @@ def arrowCheck(playerId):
                 print("%s died.\nRespawning in 10 seconds...." % v.name)
                 respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
                 respawnTimer.start()
-                players[k].dead = True
-                broadcast("PLAYER_DEAD",k)
+                players[k].playerDied()
+                broadcast("PLAYER_DIED",k)
             # print for debug
             print("Player "+players[playerId].name+" new XP: "+str(players[playerId].xp))
             broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))
