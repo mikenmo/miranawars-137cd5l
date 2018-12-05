@@ -4,18 +4,39 @@ import chat_module as ChatModule
 
 from threading import Thread
 
+import time
+
 INACTIVE_COLOR = pygame.Color( 'white' )
 ACTIVE_COLOR   = pygame.Color( 'gray' )
 PADDING        = 5
 
+PYGAME_SCREEN  = None
+DEF_FONTSIZE   = 20
+
 class Chat_In:
 
-	def __init__( self, x, y, name, chat_display, w = 200, text = 'Press Enter to Chat...', font_size = 30 ):
+	def __init__( self, x, y, name, chat_display, 
+
+		w         = 200, 
+		text      = 'Press Enter to Chat...', 
+		font_size = 30, # default value
+		BUFR_SIZE = 10
+
+		):
 
 		self.FONT_COLOR   = pygame.Color( 'black' )
+
 		self.player_name  = name
+
 		self.chat_display = chat_display
+
 		self.lobby_id     = ''
+
+
+		self.chat_display.font_size = font_size
+
+		self.chat_display.pos       = ( x, (y-font_size*2) )
+
 
 		# height of text box depends on font size
 		self.textBox     = pygame.Rect( x, y-font_size , w, font_size )
@@ -57,7 +78,7 @@ class Chat_In:
 							
 							# print the message client-side
 							except:
-								print( "<CLIENT> {} (WARNING, NOT CONNECTED)".format( self.message ) )
+								self.chat_display.add_to_buffer( "<{}> {}".format( self.player_name, self.message ) )
 
 					self.message = 'Press Enter to Chat...'
 					self.color     = INACTIVE_COLOR
@@ -108,27 +129,31 @@ class Chat_In:
 			>> shutdown and quit socket
 		'''
 		command = msg.split()
+
 		if command[0][0] != "/":
 			return False
 
 		else:
 			if command[0] == "/create":
+				if self.lobby_id:
+					return False
+
 				try:
 					self.initSocket()
 					_STATUS, _ID = ChatModule.createLobby( self.player_name )
 					
 					if _STATUS == ChatModule.SUCCESSFUL:
-						print( "<CLIENT> SUCCESSFULLY CREATED LOBBY {}!".format( _ID ) )
+						self.chat_display.add_to_buffer( "<CLIENT> SUCCESSFULLY CREATED LOBBY {}!".format( _ID ) )
 						self.lobby_id = _ID
 						self.chat_display.thread.start()
 
 					else:
-						print( "<CLIENT> UNKNOW ERROR OCCURRED..." )
+						self.chat_display.add_to_buffer( "<CLIENT> UNKNOW ERROR OCCURRED..." )
 
 						self.closeSocket()
 
 				except OSError:
-					print( "<CLIENT> SERVER IS UNREACHABLE." )
+					self.chat_display.add_to_buffer( "<CLIENT> SERVER IS UNREACHABLE." )
 
 				return True
 			
@@ -138,30 +163,30 @@ class Chat_In:
 					_STATUS = ChatModule.joinLobby( command[1], self.player_name )
 					
 					if _STATUS == ChatModule.SUCCESSFUL:
-						print( "<CLIENT> SUCCESSFULLY CONNECTED TO LOBBY {}!".format( command[1] ) )
+						self.chat_display.add_to_buffer( "<CLIENT> SUCCESSFULLY CONNECTED TO LOBBY {}!".format( command[1] ) )
 						self.lobby_id = command[1]
 						self.chat_display.thread.start()
 
 					else:
 						if _STATUS == ChatModule.UNSUCCESSFUL:
-							print( "<CLIENT> UNKNOW ERROR OCCURRED..." )
+							self.chat_display.add_to_buffer( "<CLIENT> UNKNOW ERROR OCCURRED..." )
 
 						elif _STATUS == ChatModule.LOBBY_DNE:
-							print( "<CLIENT> LOBBY DOES NOT EXIST!" )
+							self.chat_display.add_to_buffer( "<CLIENT> LOBBY DOES NOT EXIST!" )
 
 						elif _STATUS == ChatModule.LOBBY_FULL:
-							print( "<CLIENT> LOBBY IS FULL..." )
+							self.chat_display.add_to_buffer( "<CLIENT> LOBBY IS FULL..." )
 
 						self.closeSocket()
 
 				except OSError:
-					print( "<CLIENT> SERVER IS UNREACHABLE." )
+					self.chat_display.add_to_buffer( "<CLIENT> SERVER IS UNREACHABLE." )
 
 				return True
 
 			elif command[0] == "/leave":
 				if self.lobby_id == '':
-					print( "<CLIENT> INVALID REQUEST" )
+					self.chat_display.add_to_buffer( "<CLIENT> INVALID REQUEST" )
 
 				else:
 					self.lobby_id = ''
@@ -177,6 +202,7 @@ class Chat_In:
 				return True
 
 			else:
+				# ignores "invalid" command; just prints it
 				return False
 
 
@@ -201,13 +227,13 @@ class Chat_In:
 		width = max( 200, self.msg_surface.get_width() + 10 )
 		self.textBox.w = width
 
-	def draw_chat_input( self, screen ):
+	def draw_chat_input( self ):
 
 		# Blit the input box
-		pygame.draw.rect( screen, self.color, self.textBox )
+		pygame.draw.rect( PYGAME_SCREEN, self.color, self.textBox )
 
 		# blit the text surface of the input box
-		screen.blit( 
+		PYGAME_SCREEN.blit( 
 			
 			# what text surface to blit on screen
 			self.msg_surface, 
@@ -219,12 +245,106 @@ class Chat_In:
 
 class Chat_Display:
 
-	def __init__( self ):
+	def __init__( self, font_size = 30, max_messages = 10 ):
+
+		# chat buffer starts at upper left corner of input box
+		self.pos       = ()
+		
+		# default value
+		self.font_size   = font_size
+
+		self.FONT_COLOR  = pygame.Color( 'black' )
+
+		self.font        = pygame.font.Font( None, self.font_size )
+
+		self.msg_surface = self.font.render( '', True, self.FONT_COLOR )
+		
+
 		self.running = True
-		self.thread = Thread( target = self.display_message )
+
+		self.thread  = Thread( target = self.display_message )
+
+
+		self.MAX_BUF = max_messages
+
+		self.buffer  = []
+
+		self.PTR     = 0
+
+
+	def add_to_buffer( self, msg ):
+
+		if len( self.buffer ) != self.MAX_BUF:
+			self.buffer.append( msg )
+			self.PTR += 1
+
+
+		else:
+			self.PTR %= self.MAX_BUF
+
+			self.buffer[ self.PTR ] = msg
+
+			self.PTR += 1
+
+	def print_buffer( self ):
+
+		time.sleep( 0.0001 )
+		if len( self.buffer ) == 0:
+			return
+
+		itr = self.PTR - 1
+
+		x_pos, y_pos = self.pos
+
+		pos_counter  = len( self.buffer )
+
+
+		if len( self.buffer ) != self.MAX_BUF:
+			
+			while itr >= 0:
+
+				self.msg_surface = self.font.render( 
+					self.buffer[ itr ], 
+					True, 
+					self.FONT_COLOR 
+					)
+
+				PYGAME_SCREEN.blit(
+					self.msg_surface, 
+					( x_pos + PADDING, y_pos + PADDING )
+					)
+
+				y_pos = y_pos - self.font_size
+
+				itr -= 1
+
+		else:
+			while True:
+
+				if (itr-1) == self.PTR or (itr+len( self.buffer )-1) == self.PTR:
+					break
+
+				self.msg_surface = self.font.render( 
+					self.buffer[ itr ], 
+					True, 
+					self.FONT_COLOR 
+					)
+
+				PYGAME_SCREEN.blit(
+					self.msg_surface, 
+					( x_pos + PADDING, y_pos + PADDING )
+					)
+
+				y_pos = y_pos - self.font_size
+
+				if (itr-1) < 0:
+					itr = len( self.buffer ) - 1
+				else:
+					itr -= 1
+
 
 	def display_message( self ):
-		print( "<CLIENT> YOU HAVE JOINED THE CHAT LOBBY" )
+		self.add_to_buffer( "<CLIENT> YOU HAVE JOINED THE CHAT LOBBY" )
 		while self.running:
 			inputs = [ ChatModule.client_socket ]
 
@@ -236,17 +356,17 @@ class Chat_Display:
 						msg = ''
 						try:
 							msg = ChatModule.receive( sock )
-							print( msg )
+							self.add_to_buffer( msg )
 
 						except OSError:
-							print( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
+							self.add_to_buffer( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
 							self.handle_close()
 
 			except ValueError:
-				print( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
+				self.add_to_buffer( "<CLIENT> YOU HAVE LEFT THE CHAT LOBBY." )
 				self.handle_close()
 		
-		print( "<CLIENT> YOU HAVE DISCONNECTED FROM THE CHAT LOBBY" )
+		self.add_to_buffer( "<CLIENT> YOU HAVE DISCONNECTED FROM THE CHAT LOBBY" )
 
 	def handle_close( self ):
 		self.running = False
