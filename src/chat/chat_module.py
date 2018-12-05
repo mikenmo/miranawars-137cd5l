@@ -6,8 +6,8 @@ Group: Quartet Mirana
     Mojar, Kenneth
     Umali, Harold
 """
-import player_pb2 as PlayerModule
-import tcp_packet_pb2 as TcpPacketModule
+from chat import player_pb2 as PlayerModule
+from chat import tcp_packet_pb2 as TcpPacketModule
 import socket as Socket
 import select
 import sys

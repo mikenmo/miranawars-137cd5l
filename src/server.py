@@ -32,6 +32,7 @@ arrows                  = {}
 init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+print(socket.gethostbyname(socket.getfqdn()))
 server_address = (socket.gethostbyname(socket.getfqdn()), 10000)
 server_socket.bind(server_address)
 
@@ -135,7 +136,7 @@ def arrowCheck(playerId):
                 respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
                 respawnTimer.start()
                 players[k].dead = True
-                broadcast("PLAYER_KILLED",k)
+                broadcast("PLAYER_DEAD",k)
             # print for debug
             print("Player "+players[playerId].name+" new XP: "+str(players[playerId].xp))
             broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))

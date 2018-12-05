@@ -13,11 +13,15 @@ import sys
 import select
 from classes.Player import *
 from classes.Arrow import *
+from chat import chat_box
 
 # constants
 WAITING         = 0
 GAME_START      = 1
 GAME_END        = 2
+
+WIDTH = 500
+HEIGHT = 500
 
 # dictionaries
 playerId        = -1
@@ -163,11 +167,19 @@ def receiver():
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-client_socket.sendall(pickle.dumps(("CONNECT",input("Enter name: ")),pickle.HIGHEST_PROTOCOL))
+name = input("Enter name: ")
+client_socket.sendall(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL))
 
 pygame.init()
-screen = pygame.display.set_mode((500,500),pygame.HWSURFACE)
+
+chat_display = chat_box.Chat_Display( font_size = chat_box.DEF_FONTSIZE )
+chat_input   = chat_box.Chat_In( 0, HEIGHT, name, chat_display, font_size = chat_box.DEF_FONTSIZE )
+
+
+screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
 clock = pygame.time.Clock()
+chat_box.PYGAME_SCREEN = screen
+
 i = 0
 while running:
     if connected:
@@ -198,6 +210,9 @@ while running:
                         client_socket.sendall(pickle.dumps(("PLAYER",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
 
                 elif event.type == pygame.KEYDOWN:
+                    if chat_input.chat_mode:
+                        chat_input.handle_event( event )
+                        break
                     if players[playerId].dead:
                         print("You are still dead...")
                         break
@@ -231,7 +246,7 @@ while running:
                             players[playerId].upgrades -= 1
                             # request upgrade from server
                             client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
-                        
+                    chat_input.handle_event( event )
             if player_leap:
                 player_move = False
                 player.leap()
@@ -254,6 +269,9 @@ while running:
         if gameState == GAME_END:
             for k,v in players.items():
                 print("%s's score: %d" % (v.name,v.hits+v.kills*2))
+    chat_input.update_width()
+    chat_input.draw_chat_input()
+    chat_display.print_buffer()
     pygame.display.update()
 pygame.quit()
 sys.exit(0)
