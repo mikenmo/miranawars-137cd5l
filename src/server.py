@@ -59,6 +59,8 @@ def playerCheck(playerId):
         return False
     if players[playerId].leaping:
         return False
+    if not players[playerId].moving:
+        return False
     # if(0 > plac
     return True
 
@@ -91,6 +93,16 @@ def playerRespawning(playerId):
     players[playerId].playerRespawned(init_pos[playerId][0],init_pos[playerId][1])
     print("%s respawned." % (players[playerId].name))
     broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos))
+    
+def playerRecovering(playerId):
+    global players
+    while players[playerId].stunDuration>0:
+        print(players[playerId].stunDuration)
+        time.sleep(0.01)
+        players[playerId].stunDuration -= 0.01
+    players[playerId].stunDuration = 0
+    print("%s not stunned anymore." % (players[playerId].name))
+    broadcast("PLAYER_RECOVERED",(playerId))
 
 def canLevelUp(playerId):
     if players[playerId].xp % 100 == 0:
@@ -104,11 +116,12 @@ def canLevelUp(playerId):
 # condition to stop arrow thread
 def arrowCheck(playerId):
     global players
+    travelDistance = math.sqrt((arrows[playerId].xpos-arrows[playerId].startx)**2 + (arrows[playerId].ypos-arrows[playerId].starty)**2)
     # check if boundary
     if 0 > arrows[playerId].xpos or arrows[playerId].xpos > WIDTH or 0 > arrows[playerId].ypos or arrows[playerId].ypos > HEIGHT:
         return False
     # check if maximum distance
-    elif math.sqrt((arrows[playerId].xpos-arrows[playerId].startx)**2 + (arrows[playerId].ypos-arrows[playerId].starty)**2) > arrows[playerId].distance*100+500:
+    elif travelDistance > arrows[playerId].distance*100+500:
         return False
     # check if it hits player
     for k,v in players.items():
@@ -116,6 +129,16 @@ def arrowCheck(playerId):
             continue
         if not (arrows[playerId].xpos>v.xpos+PLAYER_SIZE or arrows[playerId].xpos+ARROW_SIZE<v.xpos or arrows[playerId].ypos>v.ypos+PLAYER_SIZE or arrows[playerId].ypos+ARROW_SIZE<v.ypos):
             v.decreaseHP(math.sqrt(players[playerId].power) * 34)
+            
+            if not v.stunDuration:
+                v.stunDuration = round(travelDistance/500,2)
+                v.moving = False
+                print("%s stunned again for %f seconds" % (v.name,v.stunDuration))
+                stunTimer = threading.Thread(target = playerRecovering,name = "stunTimer",args = [k])
+                stunTimer.start()
+            else:
+                v.stunDuration = round(travelDistance/500,2)
+                print("%s stunned for %f seconds" % (v.name,v.stunDuration))
             players[playerId].increaseHits(1)
             players[playerId].increaseXP(20)
             if canLevelUp(playerId):
@@ -136,7 +159,7 @@ def arrowCheck(playerId):
                 broadcast("PLAYER_DIED",k)
             # print for debug
             print("Player "+players[playerId].name+" new XP: "+str(players[playerId].xp))
-            broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp))
+            broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp,v.stunDuration))
             return False
     return True 
 
@@ -234,6 +257,10 @@ def receiver():
                 lThread.start()
                 cdTimer = threading.Timer(LEAP_COOLDOWN,leapCooldown,[playerId])
                 cdTimer.start()
+            if(keyword == "STOP"):
+                playerId = data
+                players[playerId].moving = False
+
             if(keyword == "UPGRADE_POWER"):
                 # unpack/retrieve data
                 playerId = data

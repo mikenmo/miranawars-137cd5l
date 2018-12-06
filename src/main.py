@@ -109,6 +109,8 @@ def receiver():
         if keyword == "PLAYER_RESPAWNED":
             p_id,xpos,ypos = data
             players[p_id].playerRespawned(xpos,ypos)
+        if keyword == "PLAYER_RECOVERED":
+            players[data].stunDuration = 0
         if keyword == "ARROW":
             p_id,xpos,ypos = data
             arrows[p_id].xpos = xpos
@@ -117,12 +119,14 @@ def receiver():
             arrows[data[0]] = data[1]
             players[data[0]].arrowCd = True
         if keyword == "ARROW_HIT":
-            p_id,hits,xp,k_id,hp = data
+            p_id,hits,xp,k_id,hp,stunDuration = data
             players[p_id].hits = hits
             players[p_id].xp = xp
             if canLevelUp(p_id):
                 players[p_id].levelUp()
             players[k_id].hp = hp
+            players[k_id].stunDuration = stunDuration
+
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -195,7 +199,7 @@ while running:
                     if players[playerId].dead:
                         print("You are still dead...")
                         break
-                    if players[playerId].stunned:
+                    if players[playerId].stunDuration:
                         print("You are still stunned...")
                         break
                     # left click detected
@@ -218,18 +222,18 @@ while running:
                     if players[playerId].dead:
                         print("You are still dead...")
                         break
-                    if players[playerId].stunned:
+                    if players[playerId].stunDuration:
                         print("You are still stunned...")
                         break
                     if arrReady and event.key != pygame.K_w:
                         arrReady = False
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_e and not players[playerId].leapCd:
+                    elif event.key == pygame.K_e and not players[playerId].leapCd and not players[playerId].stunDuration:
                         client_socket.sendall(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL))
                     elif event.key == pygame.K_s:
-                        player_move = False
-                    elif event.key == pygame.K_w:
+                        client_socket.sendall(pickle.dumps(("STOP",playerId),pickle.HIGHEST_PROTOCOL))
+                    elif event.key == pygame.K_w and not players[playerId].stunDuration:
                         arrReady = True
                     
                     if players[playerId].upgrades > 0:
