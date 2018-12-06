@@ -102,8 +102,8 @@ def receiver():
             gameState = GAME_START
         if keyword == "PLAYER":
             p_id,xpos,ypos = data
-            players[p_id].xpos = xpos
-            players[p_id].ypos = ypos
+            players[p_id].setXPos(xpos)
+            players[p_id].setYPos(ypos)
         if keyword == "PLAYER_DIED":
             players[data].playerDied()
         if keyword == "PLAYER_RESPAWNED":
@@ -111,56 +111,60 @@ def receiver():
             players[p_id].playerRespawned(xpos,ypos)
         if keyword == "ARROW":
             p_id,xpos,ypos = data
-            arrows[p_id].xpos = xpos
-            arrows[p_id].ypos = ypos
+            arrows[p_id].setXPos(xpos)
+            arrows[p_id].setYPos(ypos)
         if keyword == "ARROW_ADDED":
-            arrows[data[0]] = data[1]
-            players[data[0]].arrowCd = True
+            p_id, arrow = data
+            arrows[p_id] = arrow
+            players[p_id].setArrowCd(True)
         if keyword == "ARROW_HIT":
             p_id,hits,xp,k_id,hp = data
-            players[p_id].hits = hits
-            players[p_id].xp = xp
+            players[p_id].setHits(hits)
+            players[p_id].setXP(xp)
             if canLevelUp(p_id):
                 players[p_id].levelUp()
-            players[k_id].hp = hp
+            player[k_id].setHP(hp)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
-            players[data].arrowCd = False
+            p_id = data
+            players[p_id].setArrowCd(False)
         if keyword == "LEAP_CD":
-            players[data].leapCd = True
+            p_id = data
+            players[p_id].setLeapCd(True)
         if keyword == "LEAP_READY":
-            players[data].leapCd = False
+            p_id = data
+            players[p_id].setLeapCd(False)
         if keyword == "GAME_END":
             players = data
             gameState = GAME_END
         if keyword == "UPGRADED_POWER":
             # unpack/retrieve data
-            p_id, power, upgrades = data[0], data[1], data[2]
+            p_id, power, upgrades = data
             # upgrade this player's arrow power
-            players[p_id].power = power
-            players[p_id].upgrades = upgrades
+            players[p_id].setPower(power)
+            players[p_id].setUpgrades(upgrades)
             # print for debug
             print(str(p_id) + "UP POW: " + str(players[p_id].power))
         if keyword == "UPGRADED_DISTANCE":
             # unpack/retrieve data
-            p_id, distance, upgrades = data[0], data[1], data[2]
+            p_id, distance, upgrades = data
             # upgrade this player's arrow distance
-            players[p_id].distance = distance
-            players[p_id].upgrades = upgrades
+            players[p_id].setDistance(distance)
+            players[p_id].setUpgrades(upgrades)
             # print for debug
             print(str(p_id) + "UP DST: " + str(players[p_id].distance))
         if keyword == "UPGRADED_SPEED":
             # unpack/retrieve data
-            p_id, speed, upgrades = data[0], data[1], data[2]
+            p_id, speed, upgrades = data
             # upgrade this player's arrow speed
-            players[p_id].speed = speed
-            players[p_id].upgrades = upgrades
+            players[p_id].setSpeed(speed)
+            players[p_id].setUpgrades(upgrades)
             # print for debug
             print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
         if keyword == "INCREASE_XP":
-            p_id, xp = data[0], data[1]
-            players[p_id].xp = xp
+            p_id, xp = data
+            players[p_id].setXP(xp)
             print("{} XP up by {}".format(p_id, xp))
             if canLevelUp(p_id):
                 players[p_id].levelUp()
@@ -235,17 +239,17 @@ while running:
                     if players[playerId].upgrades > 0:
                         if event.key == pygame.K_z:
                             # immediately decrement current upgrade points to avoid spamming
-                            players[playerId].upgrades -= 1
+                            players[playerId].decreaseUpgrades()
                             # request upgrade from server
                             client_socket.sendall(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL))
                         elif event.key == pygame.K_x:
                             # immediately decrement current upgrade points to avoid spamming
-                            players[playerId].upgrades -= 1
+                            players[playerId].decreaseUpgrades()
                             # request upgrade from server
                             client_socket.sendall(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL))
                         elif event.key == pygame.K_c:
                             # immediately decrement current upgrade points to avoid spamming
-                            players[playerId].upgrades -= 1
+                            players[playerId].decreaseUpgrades()
                             # request upgrade from server
                             client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
                     chat_input.handle_event( event )

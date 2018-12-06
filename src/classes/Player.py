@@ -76,3 +76,63 @@ class Player:
         self.ypos = ypos
         self.hp = 100
         self.dead = False
+
+    def setAddress(self, address):
+        self.address = address
+
+    def setLeapCd(self, leapCd):
+        self.leapCd = leapCd
+
+    def setArrowCd(self, arrowCd):
+        self.arrowCd = arrowCd
+
+    def setDestX(self, destx):
+        self.destx = destx
+
+    def setDestY(self, desty):
+        self.desty = desty
+
+    def setAngle(self, angle)
+        self.angle = angle
+
+    def decreaseUpgrades(self):
+        self.upgrades -= 1
+
+    def setXPos(self, xpos):
+        self.xpos = xpos
+
+    def setYPos(self, ypos):
+        self.ypos = ypos
+
+    def setHits(self, hits):
+        self.hits = hits
+
+    def setUpgrades(self, upgrades):
+        self.upgrades = upgrades
+
+    def setHP(self, hp):
+        self.hp = hp
+
+    def setXP(self, xp):
+        self.xp = xp
+
+    def setPower(self, power):
+        self.power = power
+
+    def setDistance(self, distance):
+        self.distance = distance
+
+    def setSpeed(self, speed):
+        self.speed = speed
+
+    def setMoving(self, moving):
+        self.moving = moving
+
+    def setLeaping(self, leaping):
+        self.leaping = leaping
+
+    def isMoving(self):
+        return self.moving
+
+    def getXP(self):
+        return self.xp
