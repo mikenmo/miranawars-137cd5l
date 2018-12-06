@@ -1,4 +1,5 @@
 import math
+import threading
 from classes.Arrow import *
 
 class Player:
@@ -30,8 +31,8 @@ class Player:
         self.moving = False
         self.leaping = False
         self.dead = False
-        self.stunned = False
-
+        self.stunDuration = 0
+        
     def arrowStats(self):
         return({"power":self.power,"distance":self.distance,"speed":self.speed})
 
