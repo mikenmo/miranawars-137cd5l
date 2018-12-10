@@ -215,10 +215,10 @@ arrow_sprites   =   [
                         [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)]
                     ]
 background = pygame.transform.scale(pygame.image.load("img/bg.jpg").convert_alpha(),(WIDTH,HEIGHT))
-shurikenActive = pygame.transform.scale(pygame.image.load("img/indicators/shuriken.png").convert_alpha(),(WIDTH,HEIGHT))
-shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shurikenInactive.png").convert_alpha(),(WIDTH,HEIGHT))
-slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(WIDTH,HEIGHT))
-shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/slideInactive.png").convert_alpha(),(WIDTH,HEIGHT))
+shurikenActive = pygame.transform.scale(pygame.image.load("img/indicators/shuriken.png").convert_alpha(),(50,50))
+shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shurikenInactive.png").convert_alpha(),(50,50))
+slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(50,50))
+slideInactive = pygame.transform.scale(pygame.image.load("img/indicators/slideInactive.png").convert_alpha(),(50,50))
 
 
 # for i in range(0,4):
@@ -342,9 +342,9 @@ while running:
                 screen.blit(shurikenInactive, (WIDTH/2,HEIGHT-50))
 
             if not players[playerId].leapCd:
-                screen.blit(shurikenActive, (WIDTH/2+20,HEIGHT-50))
+                screen.blit(slideActive, (WIDTH/2+70,HEIGHT-50))
             else:
-                screen.blit(shurikenInactive, (WIDTH/2+20,HEIGHT-50))
+                screen.blit(slideInactive, (WIDTH/2+70,HEIGHT-50))
 
         if gameState == GAME_END:
             for k,v in players.items():
