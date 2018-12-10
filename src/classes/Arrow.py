@@ -21,3 +21,24 @@ class Arrow:
 
     def setYPos(self, ypos):
         self.ypos = ypos
+
+    def getXPos(self):
+        return self.xpos
+
+    def getYPos(self):
+        return self.ypos
+
+    def getStartX(self):
+        return self.startx
+
+    def getStartY(self):
+        return self.starty
+
+    def getPower(self):
+        return self.power
+
+    def getSpeed(self):
+        return self.speed
+
+    def getDistance(self):
+        return self.distance

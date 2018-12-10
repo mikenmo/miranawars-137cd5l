@@ -78,9 +78,7 @@ except:
 
 def canLevelUp(playerId):
     if players[playerId].xp % 100 == 0:
-        print("rock en rol")
         return True
-    print("sorry beh")
     return False
 
 def receiver():
@@ -108,7 +106,7 @@ def receiver():
             p_id,xpos,ypos = data
             players[p_id].playerRespawned(xpos,ypos)
         if keyword == "PLAYER_RECOVERED":
-            players[data].stunDuration = 0
+            players[data].setStunDuration(0)
         if keyword == "ARROW":
             p_id,xpos,ypos = data
             arrows[p_id].setXPos(xpos)
@@ -124,7 +122,7 @@ def receiver():
             if canLevelUp(p_id):
                 players[p_id].levelUp()
             players[k_id].setHP(hp)
-            players[k_id].stunDuration = stunDuration
+            players[k_id].setStunDuration(stunDuration)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -197,15 +195,15 @@ while running:
                     running = False
                     exited = True
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if players[playerId].dead:
+                    if players[playerId].isDead():
                         print("You are still dead...")
                         break
-                    if players[playerId].stunDuration:
+                    if players[playerId].isStunned():
                         print("You are still stunned...")
                         break
                     # left click detected
                     if event.button == 1:
-                        if arrReady and not players[playerId].arrowCd:
+                        if arrReady and not players[playerId].arrowOnCd():
                             mouse_x, mouse_y = pygame.mouse.get_pos()
                             client_socket.sendall(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
                             arrReady = False
@@ -220,21 +218,21 @@ while running:
                     if chat_input.chat_mode:
                         chat_input.handle_event( event )
                         break
-                    if players[playerId].dead:
+                    if players[playerId].isDead():
                         print("You are still dead...")
                         break
-                    if players[playerId].stunDuration:
+                    if players[playerId].isStunned():
                         print("You are still stunned...")
                         break
                     if arrReady and event.key != pygame.K_w:
                         arrReady = False
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_e and not players[playerId].leapCd and not players[playerId].stunDuration:
+                    elif event.key == pygame.K_e and not players[playerId].leapOnCd() and not players[playerId].isStunned():
                         client_socket.sendall(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL))
                     elif event.key == pygame.K_s:
                         client_socket.sendall(pickle.dumps(("STOP",playerId),pickle.HIGHEST_PROTOCOL))
-                    elif event.key == pygame.K_w and not players[playerId].stunDuration:
+                    elif event.key == pygame.K_w and not players[playerId].isStunned():
                         arrReady = True
                     
                     if players[playerId].upgrades > 0:
@@ -268,25 +266,25 @@ while running:
             screen.fill((0, 0, 0))
             # repaint player sprites
             for k,v in players.items():
-                if v.dead:
+                if v.isDead():
                     continue
-                screen.blit(player_sprites[k], (v.xpos, v.ypos))
+                screen.blit(player_sprites[k], (v.getXPos(), v.getYPos()))
             # repaint arrow sprites
             for k,v in arrows.items():
-                screen.blit(arrow_sprites[k], (v.xpos, v.ypos))
+                screen.blit(arrow_sprites[k], (v.getXPos(), v.getYPos()))
             
-            if not players[playerId].arrowCd:
+            if not players[playerId].arrowOnCd():
                 screen.blit(active_sprite, (WIDTH-110,HEIGHT-50))
             else:
                 screen.blit(inactive_sprite, (WIDTH-110,HEIGHT-50))
 
-            if not players[playerId].leapCd:
+            if not players[playerId].leapOnCd():
                 screen.blit(active_sprite, (WIDTH-50,HEIGHT-50))
             else:
                 screen.blit(inactive_sprite, (WIDTH-50,HEIGHT-50))
         if gameState == GAME_END:
             for k,v in players.items():
-                print("%s's score: %d" % (v.name,v.hits+v.kills*2))
+                print("%s's score: %d" % (v.getName(),v.getHits()+v.getKills()*2))
     chat_input.update_width()
     chat_input.draw_chat_input()
     chat_display.print_buffer()
