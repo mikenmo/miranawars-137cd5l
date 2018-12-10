@@ -36,13 +36,6 @@ exited          = False
 running         = True
 gameState       = WAITING
 
-
-# create square sprites
-sheet = pygame.image.load("img/shuriken.png").convert()
-cells = []
-for n in range(4):
-    wd,ht = (20,20)
-    rect = pygame.Rect(n*wd,0,width,height)
 player_sprites  =   [   
                         pygame.Surface((50, 50)),
                         pygame.Surface((50, 50)),
@@ -130,7 +123,7 @@ def receiver():
             players[p_id].setXP(xp)
             if canLevelUp(p_id):
                 players[p_id].levelUp()
-            player[k_id].setHP(hp)
+            players[k_id].setHP(hp)
             players[k_id].stunDuration = stunDuration
         if keyword == "ARROW_DONE":
             arrows.pop(data)

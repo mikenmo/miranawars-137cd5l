@@ -85,7 +85,7 @@ def playerLeaping(playerId):
     
 def leapCooldown(playerId):
     global players
-    players.[playerId].setLeapCd(False)
+    players[playerId].setLeapCd(False)
     broadcast("LEAP_READY",playerId)
 
 def playerRespawning(playerId):
@@ -221,7 +221,7 @@ def receiver():
                     broadcast("GAME_START",'')
                     gameTimer = threading.Timer(GAME_DURATION,endGame,[])
                                 # Note: HARD CODED TIMER FOR NOW
-                    xpThread = threading.Thread(thread=increaseXPAll, name="xpThread", args=[])
+                    xpThread = threading.Thread(target=increaseXPAll, name="xpThread", args=[])
                     gameTimer.start()
                     xpThread.start()
 

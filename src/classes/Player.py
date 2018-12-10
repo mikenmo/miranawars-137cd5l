@@ -93,7 +93,7 @@ class Player:
     def setDestY(self, desty):
         self.desty = desty
 
-    def setAngle(self, angle)
+    def setAngle(self, angle):
         self.angle = angle
 
     def decreaseUpgrades(self):
