@@ -38,6 +38,11 @@ gameState       = WAITING
 
 
 # create square sprites
+sheet = pygame.image.load("img/shuriken.png").convert()
+cells = []
+for n in range(4):
+    wd,ht = (20,20)
+    rect = pygame.Rect(n*wd,0,width,height)
 player_sprites  =   [   
                         pygame.Surface((50, 50)),
                         pygame.Surface((50, 50)),
