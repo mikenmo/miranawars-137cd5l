@@ -67,25 +67,25 @@ def playerCheck(playerId):
 # thread to move player
 def playerMoving(playerId):
     global players
-    players[playerId].moving = True
+    players[playerId].setMoving(True)
     while playerCheck(playerId):
         players[playerId].move()
         broadcast("PLAYER",(playerId,players[playerId].xpos,players[playerId].ypos))
         time.sleep(0.01)
-    players[playerId].moving = False
+    players[playerId].setMoving(False)
 
 def playerLeaping(playerId):
     global players
-    players[playerId].leaping = True
+    players[playerId].setLeaping(True)
     for i in range(0,10):
         players[playerId].leap()
         broadcast("PLAYER",(playerId,players[playerId].xpos,players[playerId].ypos))
         time.sleep(0.01)
-    players[playerId].leaping = False
+    players[playerId].setLeaping(False)
     
 def leapCooldown(playerId):
     global players
-    players[playerId].leapCd = False
+    players.[playerId].setLeapCd(False)
     broadcast("LEAP_READY",playerId)
 
 def playerRespawning(playerId):
@@ -105,7 +105,7 @@ def playerRecovering(playerId):
     broadcast("PLAYER_RECOVERED",(playerId))
 
 def canLevelUp(playerId):
-    if players[playerId].xp % 100 == 0:
+    if players[playerId].getXP() % 100 == 0:
         # print for debug
         print("CAN LEVEL UP!")
         return True
@@ -186,13 +186,15 @@ def arrowCooldown(playerId):
 
 def increaseXPAll():
     global players
-    for k, v in players.items():
-        v.increaseXP(100)
-        print("{} XP up by 100!".format(k))
-        if canLevelUp(k):
-            players[k].levelUp()
-            print("{} level up!".format(k))
-        broadcast("INCREASE_XP", (k, 100))
+    while True:
+        time.sleep(100)
+        for k, v in players.items():
+            v.increaseXP(100)
+            print("increaseXPAll: {} XP up by 100!".format(k))
+            if canLevelUp(k):
+                players[k].levelUp()
+                print("increaseXPAll: {} level up!".format(k))
+            broadcast("INCREASE_XP", (k, 100))
 
 def endGame():
     global gameState
@@ -207,9 +209,10 @@ def receiver():
         if gameState == WAITING_FOR_PLAYERS:
             if(keyword == "CONNECT"):
                 playerId = len(players)
+                # initialize new Player
                 player = Player(data,init_pos[playerId])
                 players[playerId] = player
-                players[playerId].address = address
+                players[playerId].setAddress(address)
                 broadcast("CONNECTED",(playerId,players))
                 print('%s connected....' % player.name)
                 if(len(players)==num_players):
@@ -218,9 +221,9 @@ def receiver():
                     broadcast("GAME_START",'')
                     gameTimer = threading.Timer(GAME_DURATION,endGame,[])
                                 # Note: HARD CODED TIMER FOR NOW
-                    xpAddTimer = threading.Timer(5, increaseXPAll, [])
+                    xpThread = threading.Thread(thread=increaseXPAll, name="xpThread", args=[])
                     gameTimer.start()
-                    xpAddTimer.start()
+                    xpThread.start()
 
         elif gameState == GAME_START:
             if(keyword == "PLAYER"):
@@ -228,20 +231,19 @@ def receiver():
                 # compute the angle
                 dx = mouse_x - players[playerId].xpos
                 dy = mouse_y - players[playerId].ypos
-                players[playerId].destx = mouse_x
-                players[playerId].desty = mouse_y
-                players[playerId].angle = math.atan2(dy, dx)
+                players[playerId].setDestX(mouse_x)
+                players[playerId].setDestY(mouse_y)
+                players[playerId].setAngle(math.atan2(dy, dx))
                 if(not players[playerId].moving):
                     pThread = threading.Thread(target=playerMoving,name="pThread",args=[playerId])
                     pThread.start()
-
             if(keyword == "ARROW"):
                 playerId, mouse_x, mouse_y = data
                 # initialize arrow
                 arrow = Arrow(playerId,players[playerId].xpos,players[playerId].ypos, players[playerId].power, players[playerId].distance, players[playerId].speed)
                 # change arrow lists
                 arrows[playerId] = arrow
-                players[playerId].arrowCd = True
+                players[playerId].setArrowCd(True)
                 broadcast("ARROW_ADDED",(playerId,arrow))
                 # arrow thread
                 aThread = threading.Thread(target=arrowMoving,name="aThread",args=[playerId,mouse_x,mouse_y])
@@ -251,7 +253,7 @@ def receiver():
                 cdTimer.start()
             if(keyword == "LEAP"):
                 playerId = data
-                players[playerId].leapCd = True
+                players[playerId].setLeapCd(True)
                 broadcast("LEAP_CD",playerId)
                 lThread = threading.Thread(target=playerLeaping,name="lThread",args=[playerId])
                 lThread.start()
@@ -265,24 +267,24 @@ def receiver():
                 # unpack/retrieve data
                 playerId = data
                 # upgrade this player's arrow power
-                players[playerId].power += 1
-                players[playerId].upgrades -= 1
+                players[playerId].upgradePower()
+                players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
                 broadcast("UPGRADED_POWER", (playerId, players[playerId].power, players[playerId].upgrades))
             if(keyword == "UPGRADE_DISTANCE"):
                 # unpack/retrieve data
                 playerId = data
                 # upgrade this player's arrow distance
-                players[playerId].distance += 1
-                players[playerId].upgrades -= 1
+                players[playerId].upgradeDistance()
+                players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
                 broadcast("UPGRADED_DISTANCE", (playerId, players[playerId].distance, players[playerId].upgrades))
             if(keyword == "UPGRADE_SPEED"):
                 # unpack/retrieve data
                 playerId = data
                 # upgrade this player's arrow speed
-                players[playerId].speed += 1
-                players[playerId].upgrades -= 1
+                players[playerId].upgradeSpeed()
+                players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
                 broadcast("UPGRADED_SPEED", (playerId, players[playerId].speed, players[playerId].upgrades))
 
