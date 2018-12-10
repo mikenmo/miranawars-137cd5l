@@ -214,7 +214,7 @@ arrow_sprites   =   [
                         [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)],
                         [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)]
                     ]
-background = pygame.transform.scale(pygame.image.load("img/bg.jpg").convert_alpha(),(WIDTH,HEIGHT))
+background = pygame.transform.scale(pygame.image.load("img/bg.png").convert_alpha(),(WIDTH,HEIGHT))
 shurikenActive = pygame.transform.scale(pygame.image.load("img/indicators/shuriken.png").convert_alpha(),(50,50))
 shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shurikenInactive.png").convert_alpha(),(50,50))
 slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(50,50))
