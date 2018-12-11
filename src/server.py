@@ -61,7 +61,7 @@ def broadcast(keyword, data):
 # condition to stop player thread
 def playerCheck(playerId):
     global players
-    if not(players[playerId].getXPos()>players[playerId].getDestX()+50 or players[playerId].getXPos()+PLAYER_SIZE<players[playerId].getDestX() or players[playerId].getYPos()>players[playerId].getDestY()+50 or players[playerId].getYPos()+PLAYER_SIZE<players[playerId].getDestY()):
+    if not(players[playerId].getXPos()>players[playerId].getDestX()+50 or players[playerId].getXPos()+PLAYER_SIZE_W<players[playerId].getDestX() or players[playerId].getYPos()>players[playerId].getDestY()+50 or players[playerId].getYPos()+PLAYER_SIZE_H<players[playerId].getDestY()):
         return False
     if players[playerId].leaping:
         return False

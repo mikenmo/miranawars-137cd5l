@@ -35,15 +35,17 @@ exited          = False
 running         = True
 gameState       = WAITING
 
-
+try:
+  server_ip_address = sys.argv[1]
+  name = sys.argv[2]
+except IndexError:
+  print("Correct usage: python3 client.py <server_ip_address> <player_name>")
+  raise SystemExit
+  
 
 # establish connection
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-try:
-    server_address = (sys.argv[1], 10000)
-except IndexError:
-    print("Correct usage: python3 main.py <server_ip_address>")
-    raise SystemExit
+server_address = (server_ip_address, 10000)
 try:
     client_socket.connect(server_address)
 except:
@@ -60,7 +62,11 @@ def receiver():
     global exited
     while not exited:
         global connected, playerId, players, arrows, gameState, client_socket
-        data = client_socket.recv(4096)
+        try:
+            data = client_socket.recv(4096)
+        except ConnectionRefusedError:
+            print("Lost connection to the Server.")
+            raise SystemExit
         keyword, data = pickle.loads(data)
         # print(keyword)
         if keyword == "CONNECTED":
@@ -168,14 +174,11 @@ def receiver():
                 players[p_id].levelUp()
                 print("{} level up!".format(p_id))
 
+
+
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-try:
-  name = sys.argv[2]
-except IndexError:
-  print("Correct usage: python3 main.py <server_ip_address> <player_name>")
-  
 client_socket.sendall(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL))
 
 pygame.init()
@@ -223,26 +226,27 @@ shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shur
 slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(50,50))
 slideInactive = pygame.transform.scale(pygame.image.load("img/indicators/slideInactive.png").convert_alpha(),(50,50))
 
-
-# for i in range(0,4):
-#     player_sprites[i].fill(colors[i])
-#     # arrow_sprites[i].fill(colors[i])
-
 clock = pygame.time.Clock()
 chat_box.PYGAME_SCREEN = screen
+scoreboardActive = False
+scoreboardbg = pygame.Surface((WIDTH-400, HEIGHT-200))
+scoreboardbg.fill((0,0,0))
+pygame.mixer.music.load("./music/bgm.mp3")
+pygame.mixer.music.set_volume(1)
 
 i = 0
 
 while running:
     if connected:
         if gameState == WAITING:
-            screen.blit(lobbyText,(0,0))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     exited = True
                 chat_input.handle_event( event )
         if gameState == GAME_START:
+            if not pygame.mixer.music.get_busy():
+                pygame.mixer.music.play()
             clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
