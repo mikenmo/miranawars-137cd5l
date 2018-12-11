@@ -197,10 +197,8 @@ def increaseXPAll():
             if v.isDead():
                 continue
             v.increaseXP(XP_AMOUNT)
-            print("increaseXPAll: {} XP up!".format(k))
             if canLevelUp(k):
                 players[k].levelUp()
-                print("increaseXPAll: {} level up!".format(k))
             broadcast("INCREASE_XP", (k, XP_AMOUNT))
 
 def endGame():
