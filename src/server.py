@@ -26,6 +26,8 @@ ARROW_SIZE              = 30
 WIDTH                   = 1200
 HEIGHT                  = 800
 GAME_DURATION           = 300 # in seconds
+XP_TIMER                = 5
+XP_AMOUNT               = 5
 RESPAWN_TIME            = 10
 ARROW_COOLDOWN          = 4.0
 LEAP_COOLDOWN           = 4.0
@@ -37,8 +39,7 @@ arrows                  = {}
 init_pos = [(30,60),(WIDTH-30,HEIGHT-60),(WIDTH-30,60),(30,HEIGHT-60)]
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-print(socket.gethostbyname(socket.getfqdn()))
-server_address = (socket.gethostbyname(socket.getfqdn()), 10000)
+server_address = ('', 10000)
 server_socket.bind(server_address)
 
 # show host ip address
@@ -188,18 +189,19 @@ def arrowCooldown(playerId):
 
 def increaseXPAll():
     global players
-    while gameState == GAME_END:
-        time.sleep(100)
+    while gameState == GAME_START:
+        # give XP_AMOUNT to all players every XP_TIMER second(s)
+        time.sleep(XP_TIMER)
         for k, v in players.items():
             # do not give dead players XP
             if v.isDead():
                 continue
-            v.increaseXP(100)
-            print("increaseXPAll: {} XP up by 100!".format(k))
+            v.increaseXP(XP_AMOUNT)
+            print("increaseXPAll: {} XP up!".format(k))
             if canLevelUp(k):
                 players[k].levelUp()
                 print("increaseXPAll: {} level up!".format(k))
-            broadcast("INCREASE_XP", (k, 100))
+            broadcast("INCREASE_XP", (k, XP_AMOUNT))
 
 def endGame():
     global gameState
