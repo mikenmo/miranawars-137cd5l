@@ -27,13 +27,16 @@ HEIGHT = 800
 playerId        = -1
 players         = {}
 arrows          = {}
+sounds          = {}
 
 # flags and state identifier
-connected       = False
-arrReady        = False
-exited          = False
-running         = True
-gameState       = WAITING
+scoreboardActive    = False
+leveled_up          = False
+connected           = False
+arrReady            = False
+exited              = False
+running             = True
+gameState           = WAITING
 
 try:
   server_ip_address = sys.argv[1]
@@ -52,8 +55,12 @@ def canLevelUp(playerId):
         return True
     return False
 
+def hideLevelUpText():
+    global leveled_up
+    leveled_up = False
+
 def receiver():
-    global exited
+    global exited, leveled_up
     while not exited:
         global connected, playerId, players, arrows, gameState, client_socket
         try:
@@ -90,6 +97,7 @@ def receiver():
             players[p_id].increaseKills(1)
             players[k_id].playerDied()
             players[k_id].deadTime = 0
+            sounds["ninja-death"].play(0)
         if keyword == "PLAYER_RESPAWNED":
             p_id,xpos,ypos = data
             players[p_id].playerRespawned(xpos,ypos)
@@ -106,6 +114,8 @@ def receiver():
             p_id, arrow = data
             arrows[p_id] = arrow
             players[p_id].setArrowCd(True)
+            # play sound effect
+            sounds["shuriken-throw"].play(0)
         if keyword == "ARROW_HIT":
             p_id,hits,xp,k_id,hp,stunDuration = data
             players[p_id].setHits(hits)
@@ -114,6 +124,8 @@ def receiver():
                 players[p_id].levelUp()
             players[k_id].setHP(hp)
             players[k_id].setStunDuration(stunDuration)
+            # play sound effect
+            sounds["shuriken-hit"].play(0)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -143,7 +155,7 @@ def receiver():
             players[p_id].setPower(power)
             players[p_id].setUpgrades(upgrades)
             # print for debug
-            print(str(p_id) + "UP POW: " + str(players[p_id].power))
+            print(str(p_id) + "upgaded Power: " + str(players[p_id].power))
         if keyword == "UPGRADED_DISTANCE":
             # unpack/retrieve data
             p_id, distance, upgrades = data
@@ -151,7 +163,7 @@ def receiver():
             players[p_id].setDistance(distance)
             players[p_id].setUpgrades(upgrades)
             # print for debug
-            print(str(p_id) + "UP DST: " + str(players[p_id].distance))
+            print(str(p_id) + "upgaded Distance: " + str(players[p_id].distance))
         if keyword == "UPGRADED_SPEED":
             # unpack/retrieve data
             p_id, speed, upgrades = data
@@ -159,7 +171,7 @@ def receiver():
             players[p_id].setSpeed(speed)
             players[p_id].setUpgrades(upgrades)
             # print for debug
-            print(str(p_id) + " UP SPD: " + str(players[p_id].speed))
+            print(str(p_id) + "upgraded Speed: " + str(players[p_id].speed))
         if keyword == "INCREASE_XP":
             p_id, xp = data
             players[p_id].setXP(xp)
@@ -171,16 +183,22 @@ def receiver():
             players[p_id].setXP(xp)
             players[p_id].setLvl(lvl)
             players[p_id].setUpgrades(upgrades)
-            print("{} levels up to {}!".format(players[p_id].getName(), players[p_id].getLvl()))
+            if (playerId == p_id):
+                leveled_up = True
+                level_up_thread = threading.Timer(2, hideLevelUpText, [])
+                level_up_thread.start()
 
-
+client_socket.sendto(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL), server_address)
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-client_socket.sendto(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL), server_address)
+icon = pygame.image.load("./img/icon.png")
 
+pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.init()
+pygame.display.set_caption("Shuriken Wars")
+pygame.display.set_icon(icon)
 screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
 
 chat_display = chat_box.Chat_Display( font_size = chat_box.DEF_FONTSIZE )
@@ -219,7 +237,8 @@ arrow_sprites   =   [
                         [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)],
                         [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)]
                     ]
-background = pygame.transform.scale(pygame.image.load("img/bg/0.png").convert_alpha(),(WIDTH,HEIGHT))
+
+background = pygame.transform.scale(pygame.image.load("img/bg.png").convert_alpha(),(WIDTH,HEIGHT))
 shurikenActive = pygame.transform.scale(pygame.image.load("img/indicators/shuriken.png").convert_alpha(),(50,50))
 shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shurikenInactive.png").convert_alpha(),(50,50))
 slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(50,50))
@@ -227,11 +246,14 @@ slideInactive = pygame.transform.scale(pygame.image.load("img/indicators/slideIn
 
 clock = pygame.time.Clock()
 chat_box.PYGAME_SCREEN = screen
-scoreboardActive = False
 scoreboardbg = pygame.Surface((WIDTH-400, HEIGHT-200))
 scoreboardbg.fill((0,0,0))
-pygame.mixer.music.load("./music/bgm.mp3")
-pygame.mixer.music.set_volume(1)
+# setup in-game music
+pygame.mixer.music.load("./audio/bgm.mp3")
+pygame.mixer.music.set_volume(0.50)
+sounds["shuriken-throw"] = pygame.mixer.Sound("./audio/shuriken-throw.ogg")
+sounds["shuriken-hit"] = pygame.mixer.Sound("./audio/shuriken-hit.ogg")
+sounds["ninja-death"] = pygame.mixer.Sound("./audio/ninja-death.ogg")
 
 i = 0
 
@@ -247,8 +269,7 @@ while running:
                 chat_input.handle_event( event )
         if gameState == GAME_START:
             if not pygame.mixer.music.get_busy():
-                pygame.mixer.music.play()
-            
+                pygame.mixer.music.play(0)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -311,10 +332,10 @@ while running:
                             client_socket.sendto(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                         elif event.key == pygame.K_x:
                             players[playerId].decreaseUpgrades()
-                            client_socket.sendto(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
+                            client_socket.sendto(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                         elif event.key == pygame.K_c:
                             players[playerId].decreaseUpgrades()
-                            client_socket.sendto(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
+                            client_socket.sendto(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                     chat_input.handle_event( event )
             # clear screen
             screen.blit(background,(0,0))
@@ -367,6 +388,9 @@ while running:
             else:
                 screen.blit(slideInactive, (WIDTH/2+35,HEIGHT-50))
 
+            if leveled_up:
+                screen.blit(pygame.font.Font( None, 48 ).render("You leveled up!",False,pygame.Color( 'white' )),((WIDTH/2)-135, 20))
+
             # display scoreboard
             if scoreboardActive:
                 ite = 1
@@ -378,11 +402,19 @@ while running:
                     screen.blit(pygame.font.Font( None, 72 ).render("%d/%d/%d" % (v.kills, v.deaths, v.hits),False,pygame.Color( 'white' )),(750,120+80*ite))
                     ite += 1
 
+            # display hotkeys for each ability
+            screen.blit(pygame.font.Font( None, 32 ).render("W",False,pygame.Color( 'white' )),(WIDTH/2-30,HEIGHT-50))
+            screen.blit(pygame.font.Font( None, 32 ).render("E",False,pygame.Color( 'white' )),(WIDTH/2+38,HEIGHT-50))
+
             # display this player's power, speed, distance, hp
-            screen.blit(pygame.font.Font( None, 16 ).render(("Power: {}".format(players[playerId].getPower())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-50))
-            screen.blit(pygame.font.Font( None, 16 ).render(("Speed: {}".format(players[playerId].getSpeed())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-35))
-            screen.blit(pygame.font.Font( None, 16 ).render(("Distance: {}".format(players[playerId].getDistance())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-20))
-            screen.blit(pygame.font.Font( None, 16 ).render(("Health: {}".format(players[playerId].getHP())),False,pygame.Color( 'white' )),((WIDTH/2)-80, HEIGHT-50))
+            health = round(players[playerId].getHP())
+            if (health < 0):
+                health = 0
+            screen.blit(pygame.font.Font( None, 20 ).render(("Power: {}".format(players[playerId].getPower())),False,pygame.Color( 'white' )),((WIDTH/2)-200, HEIGHT-50))
+            screen.blit(pygame.font.Font( None, 20 ).render(("Speed: {}".format(players[playerId].getSpeed())),False,pygame.Color( 'white' )),((WIDTH/2)-200, HEIGHT-35))
+            screen.blit(pygame.font.Font( None, 20 ).render(("Distance: {}".format(players[playerId].getDistance())),False,pygame.Color( 'white' )),((WIDTH/2)-200, HEIGHT-20))
+            screen.blit(pygame.font.Font( None, 20 ).render(("Health: {}".format(health)),False,pygame.Color( 'white' )),((WIDTH/2)-115, HEIGHT-50))
+            screen.blit(pygame.font.Font( None, 20 ).render(("Upgrades: {}".format(players[playerId].getUpgrades())),False,pygame.Color( 'white' )),((WIDTH/2)-115, HEIGHT-35))
 
             # display all other players' hp
             h_pos = HEIGHT-50
@@ -391,7 +423,7 @@ while running:
                     health = round(player.getHP())
                     if (health < 0):
                         health = 0
-                    screen.blit(pygame.font.Font( None, 16 ).render(("{} HP: {}".format(player.getName(), health)),False,pygame.Color( 'white' )),((WIDTH/2)+200, h_pos))
+                    screen.blit(pygame.font.Font( None, 20 ).render(("{} HP: {}".format(player.getName(), health)),False,pygame.Color( 'white' )),((WIDTH/2)+100, h_pos))
                     h_pos += 15
 
         if gameState == GAME_END:

@@ -17,7 +17,7 @@ class Chat_In:
 
 	def __init__( self, x, y, name, chat_display, 
 
-		w         = 200, 
+		w         = 300, 
 		text      = 'Press Enter to Chat...', 
 		font_size = 30, # default value
 		BUFR_SIZE = 10

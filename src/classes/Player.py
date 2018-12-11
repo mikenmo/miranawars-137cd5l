@@ -13,7 +13,7 @@ class Player:
         self.hp = 100
         self.xp = 0
         self.lvl = 1
-        self.upgrades = 999
+        self.upgrades = 1
         self.kills = 0
         self.deaths = 0
         self.hits = 0

@@ -24,8 +24,8 @@ ARROW_SIZE              = 30
 WIDTH                   = 1200
 HEIGHT                  = 800
 GAME_DURATION           = 300 # in seconds
-XP_TIMER                = 1
-XP_AMOUNT               = 10
+XP_TIMER                = 2
+XP_AMOUNT               = 5
 RESPAWN_TIME            = 10
 ARROW_COOLDOWN          = 3.0
 LEAP_COOLDOWN           = 2.5
@@ -90,7 +90,6 @@ def playerRespawning(playerId):
 def playerRecovering(playerId):
     global players
     while players[playerId].getStunDuration() > 0:
-        print(players[playerId].stunDuration)
         time.sleep(0.01)
         players[playerId].decreaseStunDuration(0.01)
     players[playerId].setStunDuration(0)
