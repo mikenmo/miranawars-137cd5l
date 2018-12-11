@@ -46,17 +46,11 @@ except IndexError:
 # establish connection
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = (server_ip_address, 10000)
-try:
-    client_socket.connect(server_address)
-except:
-    raise SystemExit
 
 def canLevelUp(playerId):
     if players[playerId].xp % 100 == 0:
         return True
     return False
-
-
 
 def receiver():
     global exited
@@ -169,17 +163,16 @@ def receiver():
         if keyword == "INCREASE_XP":
             p_id, xp = data
             players[p_id].setXP(xp)
-            print("{} XP up by {}".format(p_id, xp))
             if canLevelUp(p_id):
                 players[p_id].levelUp()
-                print("{} level up!".format(p_id))
+                print("{} levels up!".format(players[p_id].getName()))
 
 
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-client_socket.sendall(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL))
+client_socket.sendto(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL), server_address)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.HWSURFACE)
@@ -267,14 +260,14 @@ while running:
                     if event.button == 1:
                         if arrReady and not players[playerId].arrowCd:
                             mouse_x, mouse_y = pygame.mouse.get_pos()
-                            client_socket.sendall(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
+                            client_socket.sendto(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL), server_address)
                             arrReady = False
                     # right click detected
                     if event.button == 3:
                         if arrReady:
                             arrReady = False
                         mouse_x, mouse_y = pygame.mouse.get_pos()
-                        client_socket.sendall(pickle.dumps(("PLAYER",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
+                        client_socket.sendto(pickle.dumps(("PLAYER",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL), server_address)
 
                 elif event.type == pygame.KEYDOWN:
                     if chat_input.chat_mode:
@@ -299,9 +292,9 @@ while running:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     elif event.key == pygame.K_e and not players[playerId].leapCd and not players[playerId].stunDuration:
-                        client_socket.sendall(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL))
+                        client_socket.sendto(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL), server_address)
                     elif event.key == pygame.K_s:
-                        client_socket.sendall(pickle.dumps(("STOP",playerId),pickle.HIGHEST_PROTOCOL))
+                        client_socket.sendto(pickle.dumps(("STOP",playerId),pickle.HIGHEST_PROTOCOL), server_address)
                     elif event.key == pygame.K_w and not players[playerId].stunDuration:
                         arrReady = True
                     if players[playerId].upgrades > 0:
@@ -309,20 +302,14 @@ while running:
                             # immediately decrement current upgrade points to avoid spamming
                             players[playerId].decreaseUpgrades()
                             # request upgrade from server
-                            client_socket.sendall(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL))
+                            client_socket.sendto(pickle.dumps(("UPGRADE_POWER", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                         elif event.key == pygame.K_x:
-                            # immediately decrement current upgrade points to avoid spamming
                             players[playerId].decreaseUpgrades()
-                            # request upgrade from server
-                            client_socket.sendall(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL))
+                            client_socket.sendto(pickle.dumps(("UPGRADE_DISTANCE", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                         elif event.key == pygame.K_c:
-                            # immediately decrement current upgrade points to avoid spamming
                             players[playerId].decreaseUpgrades()
-                            # request upgrade from server
-                            client_socket.sendall(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL))
+                            client_socket.sendto(pickle.dumps(("UPGRADE_SPEED", (playerId)), pickle.HIGHEST_PROTOCOL), server_address)
                     chat_input.handle_event( event )
-
-
             # clear screen
             screen.blit(background,(0,0))
             # repaint player sprites
@@ -356,20 +343,25 @@ while running:
                     else:
                         screen.blit(player_sprites[k]["idle"][round(v.idleTime)%10], (v.xpos-30, v.ypos-50))
                     v.idleTime += 0.5
-            # repaint arrow sprites
+            # repaint shuriken sprites
             for k,v in arrows.items():
                 screen.blit(arrow_sprites[k][v.moveTime%10], (v.xpos-15, v.ypos-15))
             
+            # repaint shuriken icon based on its cooldown
             if not players[playerId].arrowCd:
+                # colored icon
                 screen.blit(shurikenActive, (WIDTH/2-35,HEIGHT-50))
             else:
+                # B&W icon
                 screen.blit(shurikenInactive, (WIDTH/2-35,HEIGHT-50))
 
+            # repaint slide icon based on its cooldown
             if not players[playerId].leapCd:
                 screen.blit(slideActive, (WIDTH/2+35,HEIGHT-50))
             else:
                 screen.blit(slideInactive, (WIDTH/2+35,HEIGHT-50))
 
+            # display scoreboard
             if scoreboardActive:
                 ite = 1
                 screen.blit(scoreboardbg,(200,100))
@@ -379,6 +371,23 @@ while running:
                     screen.blit(pygame.font.Font( None, 72 ).render("%s" % v.name,False,pygame.Color( 'white' )),(300,120+80*ite))
                     screen.blit(pygame.font.Font( None, 72 ).render("%d/%d/%d" % (v.kills, v.deaths, v.hits),False,pygame.Color( 'white' )),(750,120+80*ite))
                     ite += 1
+
+            # display this player's power, speed, distance, hp
+            screen.blit(pygame.font.Font( None, 16 ).render(("Power: {}".format(players[playerId].getPower())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-50))
+            screen.blit(pygame.font.Font( None, 16 ).render(("Speed: {}".format(players[playerId].getSpeed())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-35))
+            screen.blit(pygame.font.Font( None, 16 ).render(("Distance: {}".format(players[playerId].getDistance())),False,pygame.Color( 'white' )),((WIDTH/2)-135, HEIGHT-20))
+            screen.blit(pygame.font.Font( None, 16 ).render(("Health: {}".format(players[playerId].getHP())),False,pygame.Color( 'white' )),((WIDTH/2)-80, HEIGHT-50))
+
+            # display all other players' hp
+            h_pos = HEIGHT-50
+            for p_id, player in players.items():
+                if playerId != p_id:
+                    health = round(player.getHP())
+                    if (health < 0):
+                        health = 0
+                    screen.blit(pygame.font.Font( None, 16 ).render(("{} HP: {}".format(player.getName(), health)),False,pygame.Color( 'white' )),((WIDTH/2)+200, h_pos))
+                    h_pos += 15
+
         if gameState == GAME_END:
             screen.blit(background,(0,0))
             ite = 1
