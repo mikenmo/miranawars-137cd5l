@@ -287,14 +287,14 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('', 10000)
 server_socket.bind(server_address)
 
-# show host ip address
-print("Hosting at {}".format(server_address[0]))
-
 try:
     num_players=int(sys.argv[1])
 except IndexError:
     print("Correct usage: python3 server.py <num_of_players>")
     raise SystemExit
+
+# show host ip address
+print("Hosting at {}".format(server_address[0]))
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()

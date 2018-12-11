@@ -11,6 +11,7 @@ import socket
 import threading
 import sys
 import select
+from pathlib import Path
 from classes.Player import *
 from classes.Arrow import *
 from chat import chat_box
@@ -49,6 +50,9 @@ except IndexError:
 # establish connection
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = (server_ip_address, 10000)
+
+def resolvePath(path):
+    return str(Path(path))
 
 def canLevelUp(playerId):
     if players[playerId].getXP() % 100 == 0:
@@ -193,7 +197,7 @@ client_socket.sendto(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL), ser
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-icon = pygame.image.load("./img/icon.png")
+icon = pygame.image.load(resolvePath("img/icon.png"))
 
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.init()
@@ -207,53 +211,53 @@ chat_input   = chat_box.Chat_In( 0, HEIGHT, name, chat_display, font_size = chat
                         
 player_sprites  =   [   
                         {
-                            "dead":[pygame.transform.scale(pygame.image.load("img/players/1/dead/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "idle":[pygame.transform.scale(pygame.image.load("img/players/1/idle/"+str(img)+".png").convert_alpha(),(60,100)) for img in range(0,10)],
-                            "run":[pygame.transform.scale(pygame.image.load("img/players/1/run/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "slide":[pygame.transform.scale(pygame.image.load("img/players/1/slide/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
+                            "dead":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/1/dead/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "idle":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/1/idle/"+str(img)+".png")).convert_alpha(),(60,100)) for img in range(0,10)],
+                            "run":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/1/run/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "slide":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/1/slide/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
                         },
                         {
-                            "dead":[pygame.transform.scale(pygame.image.load("img/players/2/dead/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "idle":[pygame.transform.scale(pygame.image.load("img/players/2/idle/"+str(img)+".png").convert_alpha(),(60,100)) for img in range(0,10)],
-                            "run":[pygame.transform.scale(pygame.image.load("img/players/2/run/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "slide":[pygame.transform.scale(pygame.image.load("img/players/2/slide/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
+                            "dead":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/2/dead/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "idle":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/2/idle/"+str(img)+".png")).convert_alpha(),(60,100)) for img in range(0,10)],
+                            "run":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/2/run/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "slide":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/2/slide/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
                         },
                         {
-                            "dead":[pygame.transform.scale(pygame.image.load("img/players/3/dead/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "idle":[pygame.transform.scale(pygame.image.load("img/players/3/idle/"+str(img)+".png").convert_alpha(),(60,100)) for img in range(0,10)],
-                            "run":[pygame.transform.scale(pygame.image.load("img/players/3/run/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "slide":[pygame.transform.scale(pygame.image.load("img/players/3/slide/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
+                            "dead":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/3/dead/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "idle":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/3/idle/"+str(img)+".png")).convert_alpha(),(60,100)) for img in range(0,10)],
+                            "run":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/3/run/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "slide":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/3/slide/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
                         },
                         {
-                            "dead":[pygame.transform.scale(pygame.image.load("img/players/4/dead/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "idle":[pygame.transform.scale(pygame.image.load("img/players/4/idle/"+str(img)+".png").convert_alpha(),(60,100)) for img in range(0,10)],
-                            "run":[pygame.transform.scale(pygame.image.load("img/players/4/run/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
-                            "slide":[pygame.transform.scale(pygame.image.load("img/players/4/slide/"+str(img)+".png").convert_alpha(),(100,100)) for img in range(0,10)],
+                            "dead":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/4/dead/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "idle":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/4/idle/"+str(img)+".png")).convert_alpha(),(60,100)) for img in range(0,10)],
+                            "run":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/4/run/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
+                            "slide":[pygame.transform.scale(pygame.image.load(resolvePath("img/players/4/slide/"+str(img)+".png")).convert_alpha(),(100,100)) for img in range(0,10)],
                         }
                     ]
 arrow_sprites   =   [
-                        [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)],
-                        [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)],
-                        [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)],
-                        [pygame.transform.scale(pygame.image.load("img/shuriken/"+str(img)+".png").convert_alpha(),(30,30)) for img in range(0,10)]
+                        [pygame.transform.scale(pygame.image.load(resolvePath("img/shuriken/"+str(img)+".png")).convert_alpha(),(30,30)) for img in range(0,10)],
+                        [pygame.transform.scale(pygame.image.load(resolvePath("img/shuriken/"+str(img)+".png")).convert_alpha(),(30,30)) for img in range(0,10)],
+                        [pygame.transform.scale(pygame.image.load(resolvePath("img/shuriken/"+str(img)+".png")).convert_alpha(),(30,30)) for img in range(0,10)],
+                        [pygame.transform.scale(pygame.image.load(resolvePath("img/shuriken/"+str(img)+".png")).convert_alpha(),(30,30)) for img in range(0,10)]
                     ]
 
-background = pygame.transform.scale(pygame.image.load("img/bg.png").convert_alpha(),(WIDTH,HEIGHT))
-shurikenActive = pygame.transform.scale(pygame.image.load("img/indicators/shuriken.png").convert_alpha(),(50,50))
-shurikenInactive = pygame.transform.scale(pygame.image.load("img/indicators/shurikenInactive.png").convert_alpha(),(50,50))
-slideActive = pygame.transform.scale(pygame.image.load("img/indicators/slide.png").convert_alpha(),(50,50))
-slideInactive = pygame.transform.scale(pygame.image.load("img/indicators/slideInactive.png").convert_alpha(),(50,50))
+background = pygame.transform.scale(pygame.image.load(resolvePath("img/bg.png")).convert_alpha(),(WIDTH,HEIGHT))
+shurikenActive = pygame.transform.scale(pygame.image.load(resolvePath("img/indicators/shuriken.png")).convert_alpha(),(50,50))
+shurikenInactive = pygame.transform.scale(pygame.image.load(resolvePath("img/indicators/shurikenInactive.png")).convert_alpha(),(50,50))
+slideActive = pygame.transform.scale(pygame.image.load(resolvePath("img/indicators/slide.png")).convert_alpha(),(50,50))
+slideInactive = pygame.transform.scale(pygame.image.load(resolvePath("img/indicators/slideInactive.png")).convert_alpha(),(50,50))
 
 clock = pygame.time.Clock()
 chat_box.PYGAME_SCREEN = screen
 scoreboardbg = pygame.Surface((WIDTH-400, HEIGHT-200))
 scoreboardbg.fill((0,0,0))
 # setup in-game music
-pygame.mixer.music.load("./audio/bgm.mp3")
+pygame.mixer.music.load(resolvePath("audio/bgm.mp3"))
 pygame.mixer.music.set_volume(0.50)
-sounds["shuriken-throw"] = pygame.mixer.Sound("./audio/shuriken-throw.ogg")
-sounds["shuriken-hit"] = pygame.mixer.Sound("./audio/shuriken-hit.ogg")
-sounds["ninja-death"] = pygame.mixer.Sound("./audio/ninja-death.ogg")
+sounds["shuriken-throw"] = pygame.mixer.Sound(resolvePath("audio/shuriken-throw.ogg"))
+sounds["shuriken-hit"] = pygame.mixer.Sound(resolvePath("audio/shuriken-hit.ogg"))
+sounds["ninja-death"] = pygame.mixer.Sound(resolvePath("audio/ninja-death.ogg"))
 
 i = 0
 
