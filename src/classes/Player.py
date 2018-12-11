@@ -70,6 +70,7 @@ class Player:
 
     def levelUp(self):
         self.upgrades += 1
+        self.lvl += 1
 
     def decreaseHP(self, hp):
         self.hp -= hp
