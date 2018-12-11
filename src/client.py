@@ -237,8 +237,10 @@ pygame.mixer.music.set_volume(1)
 i = 0
 
 while running:
+    clock.tick(60)
     if connected:
         if gameState == WAITING:
+            screen.fill((0,0,0))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -247,7 +249,7 @@ while running:
         if gameState == GAME_START:
             if not pygame.mixer.music.get_busy():
                 pygame.mixer.music.play()
-            clock.tick(60)
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -378,6 +380,7 @@ while running:
                     screen.blit(pygame.font.Font( None, 72 ).render("%d/%d/%d" % (v.kills, v.deaths, v.hits),False,pygame.Color( 'white' )),(750,120+80*ite))
                     ite += 1
         if gameState == GAME_END:
+            screen.blit(background,(0,0))
             ite = 1
             screen.blit(scoreboardbg,(200,100))
             screen.blit(pygame.font.Font( None, 72 ).render("FINAL SCORE",False,pygame.Color( 'white' )),(450,25))
@@ -392,6 +395,7 @@ while running:
                     running = False
                     exited = True
                 chat_input.handle_event( event )
+            
     chat_input.update_width()
     chat_input.draw_chat_input()
     chat_display.print_buffer()
