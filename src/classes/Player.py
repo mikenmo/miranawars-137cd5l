@@ -143,3 +143,63 @@ class Player:
 
     def getXP(self):
         return self.xp
+
+    def getHits(self):
+        return self.hits
+
+    def getKills(self):
+        return self.kills
+
+    def isDead(self):
+        return self.dead
+
+    def isStunned(self):
+        return self.stunDuration
+
+    def setStunDuration(self, stunDuration):
+        self.stunDuration = stunDuration
+
+    def leapOnCd(self):
+        return self.leapCd
+
+    def arrowOnCd(self):
+        return self.arrowCd
+
+    def getXPos(self):
+        return self.xpos
+
+    def getYPos(self):
+        return self.ypos
+
+    def getDestX(self):
+        return self.destx
+
+    def getDestY(self):
+        return self.desty
+
+    def getPower(self):
+        return self.power
+
+    def getSpeed(self):
+        return self.speed
+
+    def getDistance(self):
+        return self.distance
+
+    def getName(self):
+        return self.name
+
+    def getUpgrades(self):
+        return self.upgrades
+
+    def getStunDuration(self):
+        return self.stunDuration
+
+    def decreaseStunDuration(self, stunDuration):
+        self.stunDuration -= stunDuration
+
+    def getHP(self):
+        return self.hp
+
+    def getAddress(self):
+        return self.address

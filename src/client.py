@@ -51,9 +51,7 @@ except:
 
 def canLevelUp(playerId):
     if players[playerId].xp % 100 == 0:
-        print("rock en rol")
         return True
-    print("sorry beh")
     return False
 
 
@@ -115,7 +113,7 @@ def receiver():
             if canLevelUp(p_id):
                 players[p_id].levelUp()
             players[k_id].setHP(hp)
-            players[k_id].stunDuration = stunDuration
+            players[k_id].setStunDuration(stunDuration)
         if keyword == "ARROW_DONE":
             arrows.pop(data)
         if keyword == "ARROW_READY":
@@ -173,7 +171,11 @@ def receiver():
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-name = input("Enter name: ")
+try:
+  name = sys.argv[2]
+except IndexError:
+  print("Correct usage: python3 main.py <server_ip_address> <player_name>")
+  
 client_socket.sendall(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL))
 
 pygame.init()
@@ -230,14 +232,6 @@ clock = pygame.time.Clock()
 chat_box.PYGAME_SCREEN = screen
 
 i = 0
-scoreboardActive = False
-
-lobbyFont = pygame.font.Font( None, 25 )
-lobbyText = lobbyFont.render("Waiting for players....",False,pygame.Color( 'white' ))
-
-scoreboardbg = pygame.Surface((WIDTH - 400,HEIGHT-200))
-scoreboardbg.fill((0,0,0))
-
 
 while running:
     if connected:
@@ -286,6 +280,8 @@ while running:
                             break
                         else:
                             break
+                    if event.key == pygame.K_TAB and not scoreboardActive:
+                        scoreboardActive = True
                     if players[playerId].dead:
                         print("You are still dead...")
                         break
@@ -296,8 +292,6 @@ while running:
                         arrReady = False
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_TAB and not scoreboardActive:
-                        scoreboardActive = True
                     elif event.key == pygame.K_e and not players[playerId].leapCd and not players[playerId].stunDuration:
                         client_socket.sendall(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL))
                     elif event.key == pygame.K_s:
