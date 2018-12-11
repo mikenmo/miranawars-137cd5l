@@ -1,4 +1,5 @@
 from classes.Player import *
+import math
 class Arrow:
     def __init__(self,playerId,xpos,ypos, power, distance, speed):
         self.playerId = playerId
@@ -14,8 +15,8 @@ class Arrow:
         self.moveTime = 0
         
     def move(self):
-        self.xpos += self.speed * 6 * math.cos(self.angle)
-        self.ypos += self.speed * 6 * math.sin(self.angle)
+        self.xpos += math.log(self.speed*10,10) * 6 * math.cos(self.angle)
+        self.ypos += math.log(self.speed*10,10) * 6 * math.sin(self.angle)
 
     def setXPos(self, xpos):
         self.xpos = xpos

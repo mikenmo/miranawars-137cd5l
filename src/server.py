@@ -29,8 +29,8 @@ GAME_DURATION           = 300 # in seconds
 XP_TIMER                = 5
 XP_AMOUNT               = 5
 RESPAWN_TIME            = 10
-ARROW_COOLDOWN          = 4.0
-LEAP_COOLDOWN           = 4.0
+ARROW_COOLDOWN          = 3.0
+LEAP_COOLDOWN           = 2.5
 
 # dictionaries
 players                 = {}
@@ -125,14 +125,14 @@ def arrowCheck(playerId):
     if 0 > arrows[playerId].getXPos() or arrows[playerId].getXPos() > WIDTH or 0 > arrows[playerId].getYPos() or arrows[playerId].getYPos() > HEIGHT:
         return False
     # check if maximum distance
-    elif travelDistance > arrows[playerId].getDistance()*100+500:
+    elif travelDistance > arrows[playerId].getDistance()*125+250:
         return False
     # check if it hits player
     for k,v in players.items():
         if k == playerId or v.isDead() == True:
             continue
         if not (arrows[playerId].xpos-ARROW_ADJUST_X>v.xpos+PLAYER_SIZE_W-PLAYER_ADJUST_X or arrows[playerId].xpos+ARROW_SIZE-ARROW_ADJUST_X<v.xpos-PLAYER_ADJUST_X or arrows[playerId].ypos-ARROW_ADJUST_Y>v.ypos+PLAYER_SIZE_H-PLAYER_ADJUST_Y or arrows[playerId].ypos-ARROW_ADJUST_Y+ARROW_SIZE<v.ypos-PLAYER_ADJUST_Y):
-            v.decreaseHP(math.sqrt(players[playerId].power) * 34)
+            v.decreaseHP(players[playerId].power * 10)
             if not v.stunDuration:
                 v.stunDuration = round(travelDistance/500,2)
                 v.moving = False
