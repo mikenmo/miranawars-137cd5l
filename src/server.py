@@ -26,8 +26,8 @@ ARROW_SIZE              = 30
 WIDTH                   = 1200
 HEIGHT                  = 800
 GAME_DURATION           = 300 # in seconds
-XP_TIMER                = 5
-XP_AMOUNT               = 5
+XP_TIMER                = 1
+XP_AMOUNT               = 10
 RESPAWN_TIME            = 10
 ARROW_COOLDOWN          = 3.0
 LEAP_COOLDOWN           = 2.5
@@ -149,7 +149,7 @@ def arrowCheck(playerId):
             # print for debug
             print("Player %s's arrow hit player %s.\nPlayer %s's hp: %d" % (players[playerId].getName(), v.getName(), v.getName(), v.getHP()))
             # playerId's arrow killed their opponent player
-            if(v.getHP() < 0):
+            if(v.getHP() <= 0):
                 players[playerId].increaseXP(30)
                 if canLevelUp(playerId):
                     players[playerId].levelUp()
