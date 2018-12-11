@@ -32,6 +32,12 @@ class Player:
         self.leaping = False
         self.dead = False
         self.stunDuration = 0
+        #only for client
+        self.deadTime = 0
+        self.moveTime = 0
+        self.leapTime = 0
+        self.idleTime = 0
+
         
     def arrowStats(self):
         return({"power":self.power,"distance":self.distance,"speed":self.speed})

@@ -16,10 +16,15 @@ from classes.Arrow import *
 WAITING_FOR_PLAYERS     = 1
 GAME_START              = 2
 GAME_END                = 3
-PLAYER_SIZE             = 50
-ARROW_SIZE              = 20
-WIDTH                   = 500
-HEIGHT                  = 500
+PLAYER_SIZE_W           = 60
+PLAYER_SIZE_H           = 100
+PLAYER_ADJUST_X         = 30
+PLAYER_ADJUST_Y         = 50
+ARROW_ADJUST_X          = 15
+ARROW_ADJUST_Y          = 15
+ARROW_SIZE              = 30
+WIDTH                   = 1200
+HEIGHT                  = 800
 GAME_DURATION           = 300 # in seconds
 RESPAWN_TIME            = 10
 ARROW_COOLDOWN          = 4.0
@@ -29,7 +34,7 @@ LEAP_COOLDOWN           = 4.0
 players                 = {}
 arrows                  = {}
 
-init_pos = [(0,0),(WIDTH,HEIGHT),(WIDTH,0),(0,HEIGHT)]
+init_pos = [(30,60),(WIDTH-30,HEIGHT-60),(WIDTH-30,60),(30,HEIGHT-60)]
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 print(socket.gethostbyname(socket.getfqdn()))
@@ -70,18 +75,20 @@ def playerMoving(playerId):
     players[playerId].setMoving(True)
     while playerCheck(playerId):
         players[playerId].move()
-        broadcast("PLAYER",(playerId,players[playerId].getXPos(),players[playerId].getYPos()))
-        time.sleep(0.01)
+        broadcast("MOVING",(playerId,players[playerId].getXPos(),players[playerId].getYPos(),players[playerId].getDestX(),players[playerId].getDestY()))
+        time.sleep(0.02)
     players[playerId].setMoving(False)
+    broadcast("MOVE_DONE",playerId)
 
 def playerLeaping(playerId):
     global players
     players[playerId].setLeaping(True)
-    for i in range(0,10):
+    for i in range(0,15):
         players[playerId].leap()
-        broadcast("PLAYER",(playerId,players[playerId].getXPos(),players[playerId].getYPos()))
-        time.sleep(0.01)
+        broadcast("LEAPING",(playerId,players[playerId].getXPos(),players[playerId].getYPos()))
+        time.sleep(0.02)
     players[playerId].setLeaping(False)
+    broadcast("LEAP_DONE",playerId)
     
 def leapCooldown(playerId):
     global players
@@ -123,12 +130,12 @@ def arrowCheck(playerId):
     for k,v in players.items():
         if k == playerId or v.isDead() == True:
             continue
-        if not (arrows[playerId].getXPos()>v.getXPos()+PLAYER_SIZE or arrows[playerId].getXPos()+ARROW_SIZE<v.getXPos() or arrows[playerId].getYPos()>v.getYPos()+PLAYER_SIZE or arrows[playerId].getYPos()+ARROW_SIZE<v.getYPos()):
-            v.decreaseHP(math.sqrt(players[playerId].getPower()) * 34)
-            if not v.isStunned():
-                v.setStunDuration(round(travelDistance/500,2))
-                v.setMoving(False)
-                print("%s stunned again for %f seconds" % (v.getName(),v.getStunDuration()))
+        if not (arrows[playerId].xpos-ARROW_ADJUST_X>v.xpos+PLAYER_SIZE_W-PLAYER_ADJUST_X or arrows[playerId].xpos+ARROW_SIZE-ARROW_ADJUST_X<v.xpos-PLAYER_ADJUST_X or arrows[playerId].ypos-ARROW_ADJUST_Y>v.ypos+PLAYER_SIZE_H-PLAYER_ADJUST_Y or arrows[playerId].ypos-ARROW_ADJUST_Y+ARROW_SIZE<v.ypos-PLAYER_ADJUST_Y):
+            v.decreaseHP(math.sqrt(players[playerId].power) * 34)
+            if not v.stunDuration:
+                v.stunDuration = round(travelDistance/500,2)
+                v.moving = False
+                print("%s stunned again for %f seconds" % (v.name,v.stunDuration))
                 stunTimer = threading.Thread(target = playerRecovering,name = "stunTimer",args = [k])
                 stunTimer.start()
             else:
@@ -181,8 +188,7 @@ def arrowCooldown(playerId):
 
 def increaseXPAll():
     global players
-    while True:
-        # every 100 seconds, an XP bonus will be given to all players who are currently alive in the game
+    while gameState == GAME_END:
         time.sleep(100)
         for k, v in players.items():
             # do not give dead players XP
@@ -199,6 +205,7 @@ def endGame():
     global gameState
     gameState = GAME_END
     print("Game has ended...")
+    broadcast("GAME_END","")
 
 def receiver():
     while True:
