@@ -243,6 +243,11 @@ while running:
     if connected:
         if gameState == WAITING:
             screen.blit(lobbyText,(0,0))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    exited = True
+                chat_input.handle_event( event )
         if gameState == GAME_START:
             clock.tick(60)
             for event in pygame.event.get():
