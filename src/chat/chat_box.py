@@ -47,7 +47,7 @@ class Chat_In:
 
 		self.font        = pygame.font.Font( None, font_size )
 
-		self.msg_surface = self.font.render( self.message, True, self.FONT_COLOR )
+		self.msg_surface = self.font.render( self.message, False, self.FONT_COLOR )
 
 		self.chat_mode   = False
 
@@ -94,7 +94,7 @@ class Chat_In:
 					self.message += event.unicode
 
 
-				self.msg_surface = self.font.render( self.message, True, self.FONT_COLOR )
+				self.msg_surface = self.font.render( self.message, False, self.FONT_COLOR )
 
 
 			else:
@@ -103,7 +103,7 @@ class Chat_In:
 
 					# print( "CHAT MODE" )
 					self.message = ''
-					self.msg_surface = self.font.render( self.message, True, self.FONT_COLOR )
+					self.msg_surface = self.font.render( self.message, False, self.FONT_COLOR )
 
 					self.color     = ACTIVE_COLOR
 					self.chat_mode = True
@@ -224,7 +224,7 @@ class Chat_In:
 	def update_width( self ):
 
 		# Resize the input box if the text is too long
-		width = max( 200, self.msg_surface.get_width() + 10 )
+		width = max( 200, self.msg_surface	.get_width() + 10 )
 		self.textBox.w = width
 
 	def draw_chat_input( self ):
@@ -257,7 +257,7 @@ class Chat_Display:
 
 		self.font        = pygame.font.Font( None, self.font_size )
 
-		self.msg_surface = self.font.render( '', True, self.FONT_COLOR )
+		self.msg_surface = self.font.render( '', False, self.FONT_COLOR )
 		
 
 		self.running = True

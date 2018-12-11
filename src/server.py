@@ -158,7 +158,7 @@ def arrowCheck(playerId):
                 respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
                 respawnTimer.start()
                 players[k].playerDied()
-                broadcast("PLAYER_DIED",k)
+                broadcast("PLAYER_DIED",(playerId,k))
             # print for debug
             print("Player "+players[playerId].getName()+" new XP: "+str(players[playerId].getXP()))
             broadcast("ARROW_HIT",(playerId,players[playerId].getHits(),players[playerId].getXP(),k,v.getHP(),v.getStunDuration()))

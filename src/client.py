@@ -80,14 +80,16 @@ def receiver():
             if not players[p_id].moving:
                 players[p_id].moveTime = 0
                 players[p_id].moving = True
-            players[p_id].moveTime +=1
+            players[p_id].moveTime +=0.7
         if keyword == "MOVE_DONE":
             p_id = data
             players[p_id].moving = False
             players[p_id].idleTime = 0
         if keyword == "PLAYER_DIED":
-            players[data].playerDied()
-            players[data].deadTime = 0
+            p_id,k_id = data
+            players[p_id].increaseKills(1)
+            players[k_id].playerDied()
+            players[k_id].deadTime = 0
         if keyword == "PLAYER_RESPAWNED":
             p_id,xpos,ypos = data
             players[p_id].playerRespawned(xpos,ypos)
@@ -133,7 +135,6 @@ def receiver():
             p_id = data
             players[p_id].leaping = False
         if keyword == "GAME_END":
-            players = data
             gameState = GAME_END
         if keyword == "UPGRADED_POWER":
             # unpack/retrieve data
@@ -170,7 +171,11 @@ def receiver():
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
 
-name = input("Enter name: ")
+try:
+  name = sys.argv[2]
+except IndexError:
+  print("Correct usage: python3 main.py <server_ip_address> <player_name>")
+  
 client_socket.sendall(pickle.dumps(("CONNECT",name),pickle.HIGHEST_PROTOCOL))
 
 pygame.init()
@@ -229,8 +234,14 @@ chat_box.PYGAME_SCREEN = screen
 i = 0
 
 while running:
-
     if connected:
+        if gameState == WAITING:
+            screen.blit(lobbyText,(0,0))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    exited = True
+                chat_input.handle_event( event )
         if gameState == GAME_START:
             clock.tick(60)
             for event in pygame.event.get():
@@ -238,15 +249,17 @@ while running:
                     running = False
                     exited = True
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if players[playerId].isDead():
+                    if players[playerId].dead:
                         print("You are still dead...")
                         break
-                    if players[playerId].isStunned():
+                    if players[playerId].stunDuration:
                         print("You are still stunned...")
+                        break
+                    if scoreboardActive:
                         break
                     # left click detected
                     if event.button == 1:
-                        if arrReady and not players[playerId].arrowOnCd():
+                        if arrReady and not players[playerId].arrowCd:
                             mouse_x, mouse_y = pygame.mouse.get_pos()
                             client_socket.sendall(pickle.dumps(("ARROW",(playerId,mouse_x,mouse_y)),pickle.HIGHEST_PROTOCOL))
                             arrReady = False
@@ -261,23 +274,30 @@ while running:
                     if chat_input.chat_mode:
                         chat_input.handle_event( event )
                         break
-                    if players[playerId].isDead():
+                    if scoreboardActive:
+                        if event.key == pygame.K_TAB:
+                            scoreboardActive = False
+                            break
+                        else:
+                            break
+                    if event.key == pygame.K_TAB and not scoreboardActive:
+                        scoreboardActive = True
+                    if players[playerId].dead:
                         print("You are still dead...")
                         break
-                    if players[playerId].isStunned():
+                    if players[playerId].stunDuration:
                         print("You are still stunned...")
                         break
                     if arrReady and event.key != pygame.K_w:
                         arrReady = False
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_e and not players[playerId].leapOnCd() and not players[playerId].isStunned():
+                    elif event.key == pygame.K_e and not players[playerId].leapCd and not players[playerId].stunDuration:
                         client_socket.sendall(pickle.dumps(("LEAP",playerId),pickle.HIGHEST_PROTOCOL))
                     elif event.key == pygame.K_s:
                         client_socket.sendall(pickle.dumps(("STOP",playerId),pickle.HIGHEST_PROTOCOL))
-                    elif event.key == pygame.K_w and not players[playerId].isStunned():
+                    elif event.key == pygame.K_w and not players[playerId].stunDuration:
                         arrReady = True
-                    
                     if players[playerId].upgrades > 0:
                         if event.key == pygame.K_z:
                             # immediately decrement current upgrade points to avoid spamming
@@ -321,32 +341,53 @@ while running:
                         screen.blit(player_sprites[k]["slide"][v.leapTime%10], (v.xpos-30, v.ypos-50))
                 elif v.moving:
                     if(v.xpos>v.destx):
-                        screen.blit(pygame.transform.flip(player_sprites[k]["run"][v.moveTime%10],True,False), (v.xpos-30, v.ypos-50))
+                        screen.blit(pygame.transform.flip(player_sprites[k]["run"][round(v.moveTime)%10],True,False), (v.xpos-30, v.ypos-50))
                     else:
-                        screen.blit(player_sprites[k]["run"][v.moveTime%10], (v.xpos-30, v.ypos-50))
+                        screen.blit(player_sprites[k]["run"][round(v.moveTime)%10], (v.xpos-30, v.ypos-50))
                 else:
                     if(v.xpos>v.destx):
-                        screen.blit(pygame.transform.flip(player_sprites[k]["idle"][v.idleTime%10],True,False), (v.xpos-30, v.ypos-50))
+                        screen.blit(pygame.transform.flip(player_sprites[k]["idle"][round(v.idleTime)%10],True,False), (v.xpos-30, v.ypos-50))
                     else:
-                        screen.blit(player_sprites[k]["idle"][v.idleTime%10], (v.xpos-30, v.ypos-50))
-                    v.idleTime += 1
+                        screen.blit(player_sprites[k]["idle"][round(v.idleTime)%10], (v.xpos-30, v.ypos-50))
+                    v.idleTime += 0.5
             # repaint arrow sprites
             for k,v in arrows.items():
                 screen.blit(arrow_sprites[k][v.moveTime%10], (v.xpos-15, v.ypos-15))
             
             if not players[playerId].arrowCd:
-                screen.blit(shurikenActive, (WIDTH/2,HEIGHT-50))
+                screen.blit(shurikenActive, (WIDTH/2-35,HEIGHT-50))
             else:
-                screen.blit(shurikenInactive, (WIDTH/2,HEIGHT-50))
+                screen.blit(shurikenInactive, (WIDTH/2-35,HEIGHT-50))
 
             if not players[playerId].leapCd:
-                screen.blit(slideActive, (WIDTH/2+70,HEIGHT-50))
+                screen.blit(slideActive, (WIDTH/2+35,HEIGHT-50))
             else:
-                screen.blit(slideInactive, (WIDTH/2+70,HEIGHT-50))
+                screen.blit(slideInactive, (WIDTH/2+35,HEIGHT-50))
 
+            if scoreboardActive:
+                ite = 1
+                screen.blit(scoreboardbg,(200,100))
+                screen.blit(pygame.font.Font( None, 72 ).render("NAME",False,pygame.Color( 'white' )),(300,120))
+                screen.blit(pygame.font.Font( None, 72 ).render("K/D/H",False,pygame.Color( 'white' )),(750,120))
+                for k,v in players.items():
+                    screen.blit(pygame.font.Font( None, 72 ).render("%s" % v.name,False,pygame.Color( 'white' )),(300,120+80*ite))
+                    screen.blit(pygame.font.Font( None, 72 ).render("%d/%d/%d" % (v.kills, v.deaths, v.hits),False,pygame.Color( 'white' )),(750,120+80*ite))
+                    ite += 1
         if gameState == GAME_END:
+            ite = 1
+            screen.blit(scoreboardbg,(200,100))
+            screen.blit(pygame.font.Font( None, 72 ).render("FINAL SCORE",False,pygame.Color( 'white' )),(450,25))
+            screen.blit(pygame.font.Font( None, 72 ).render("NAME",False,pygame.Color( 'white' )),(300,120))
+            screen.blit(pygame.font.Font( None, 72 ).render("K/D/H",False,pygame.Color( 'white' )),(750,120))
             for k,v in players.items():
-                print("%s's score: %d" % (v.getName(),v.getHits()+v.getKills()*2))
+                screen.blit(pygame.font.Font( None, 72 ).render("%s" % v.name,False,pygame.Color( 'white' )),(300,120+80*ite))
+                screen.blit(pygame.font.Font( None, 72 ).render("%d/%d/%d" % (v.kills, v.deaths, v.hits),False,pygame.Color( 'white' )),(750,120+80*ite))
+                ite += 1
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    exited = True
+                chat_input.handle_event( event )
     chat_input.update_width()
     chat_input.draw_chat_input()
     chat_display.print_buffer()
