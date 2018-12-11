@@ -55,12 +55,12 @@ gameState = WAITING_FOR_PLAYERS
 # send data to all clients including the sender
 def broadcast(keyword, data):
     for k,v in players.items():
-        server_socket.sendto(pickle.dumps((keyword,data),pickle.HIGHEST_PROTOCOL),v.address)
+        server_socket.sendto(pickle.dumps((keyword,data),pickle.HIGHEST_PROTOCOL),v.getAddress())
 
 # condition to stop player thread
 def playerCheck(playerId):
     global players
-    if not(players[playerId].xpos>players[playerId].destx+50 or players[playerId].xpos+PLAYER_SIZE_W<players[playerId].destx or players[playerId].ypos>players[playerId].desty+50 or players[playerId].ypos+PLAYER_SIZE_H<players[playerId].desty):
+    if not(players[playerId].getXPos()>players[playerId].getDestX()+50 or players[playerId].getXPos()+PLAYER_SIZE<players[playerId].getDestX() or players[playerId].getYPos()>players[playerId].getDestY()+50 or players[playerId].getYPos()+PLAYER_SIZE<players[playerId].getDestY()):
         return False
     if players[playerId].leaping:
         return False
@@ -75,7 +75,7 @@ def playerMoving(playerId):
     players[playerId].setMoving(True)
     while playerCheck(playerId):
         players[playerId].move()
-        broadcast("MOVING",(playerId,players[playerId].xpos,players[playerId].ypos,players[playerId].destx,players[playerId].desty))
+        broadcast("MOVING",(playerId,players[playerId].getXPos(),players[playerId].getYPos(),players[playerId].getDestX(),players[playerId].getDestY()))
         time.sleep(0.02)
     players[playerId].setMoving(False)
     broadcast("MOVE_DONE",playerId)
@@ -85,7 +85,7 @@ def playerLeaping(playerId):
     players[playerId].setLeaping(True)
     for i in range(0,15):
         players[playerId].leap()
-        broadcast("LEAPING",(playerId,players[playerId].xpos,players[playerId].ypos))
+        broadcast("LEAPING",(playerId,players[playerId].getXPos(),players[playerId].getYPos()))
         time.sleep(0.02)
     players[playerId].setLeaping(False)
     broadcast("LEAP_DONE",playerId)
@@ -98,45 +98,40 @@ def leapCooldown(playerId):
 def playerRespawning(playerId):
     global players
     players[playerId].playerRespawned(init_pos[playerId][0],init_pos[playerId][1])
-    print("%s respawned." % (players[playerId].name))
-    broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].xpos,players[playerId].ypos))
+    print("%s respawned." % (players[playerId].getName()))
+    broadcast("PLAYER_RESPAWNED",(playerId,players[playerId].getXPos(),players[playerId].getYPos()))
     
 def playerRecovering(playerId):
     global players
-    while players[playerId].stunDuration>0:
+    while players[playerId].getStunDuration() > 0:
         print(players[playerId].stunDuration)
         time.sleep(0.01)
-        players[playerId].stunDuration -= 0.01
-    players[playerId].stunDuration = 0
-    print("%s not stunned anymore." % (players[playerId].name))
+        players[playerId].decreaseStunDuration(0.01)
+    players[playerId].setStunDuration(0)
+    print("%s not stunned anymore." % (players[playerId].getName()))
     broadcast("PLAYER_RECOVERED",(playerId))
 
 def canLevelUp(playerId):
     if players[playerId].getXP() % 100 == 0:
-        # print for debug
-        print("CAN LEVEL UP!")
         return True
-    # print for debug
-    print("SORRY CANNOT BE YET")
     return False
 
 # condition to stop arrow thread
 def arrowCheck(playerId):
     global players
-    travelDistance = math.sqrt((arrows[playerId].xpos-arrows[playerId].startx)**2 + (arrows[playerId].ypos-arrows[playerId].starty)**2)
+    travelDistance = math.sqrt((arrows[playerId].getXPos()-arrows[playerId].getStartX())**2 + (arrows[playerId].getYPos()-arrows[playerId].getStartY())**2)
     # check if boundary
-    if 0 > arrows[playerId].xpos or arrows[playerId].xpos > WIDTH or 0 > arrows[playerId].ypos or arrows[playerId].ypos > HEIGHT:
+    if 0 > arrows[playerId].getXPos() or arrows[playerId].getXPos() > WIDTH or 0 > arrows[playerId].getYPos() or arrows[playerId].getYPos() > HEIGHT:
         return False
     # check if maximum distance
-    elif travelDistance > arrows[playerId].distance*100+500:
+    elif travelDistance > arrows[playerId].getDistance()*100+500:
         return False
     # check if it hits player
     for k,v in players.items():
-        if k == playerId or v.dead == True:
+        if k == playerId or v.isDead() == True:
             continue
         if not (arrows[playerId].xpos-ARROW_ADJUST_X>v.xpos+PLAYER_SIZE_W-PLAYER_ADJUST_X or arrows[playerId].xpos+ARROW_SIZE-ARROW_ADJUST_X<v.xpos-PLAYER_ADJUST_X or arrows[playerId].ypos-ARROW_ADJUST_Y>v.ypos+PLAYER_SIZE_H-PLAYER_ADJUST_Y or arrows[playerId].ypos-ARROW_ADJUST_Y+ARROW_SIZE<v.ypos-PLAYER_ADJUST_Y):
             v.decreaseHP(math.sqrt(players[playerId].power) * 34)
-            
             if not v.stunDuration:
                 v.stunDuration = round(travelDistance/500,2)
                 v.moving = False
@@ -144,29 +139,29 @@ def arrowCheck(playerId):
                 stunTimer = threading.Thread(target = playerRecovering,name = "stunTimer",args = [k])
                 stunTimer.start()
             else:
-                v.stunDuration = round(travelDistance/500,2)
-                print("%s stunned for %f seconds" % (v.name,v.stunDuration))
+                v.setStunDuration(round(travelDistance/500,2))
+                print("%s stunned for %f seconds" % (v.getName(),v.getStunDuration()))
             players[playerId].increaseHits(1)
             players[playerId].increaseXP(20)
             if canLevelUp(playerId):
                 players[playerId].levelUp()
             # print for debug
-            print("Player %s's arrow hit player %s.\nPlayer %s's hp: %d" % (players[playerId].name, v.name, v.name, v.hp))
+            print("Player %s's arrow hit player %s.\nPlayer %s's hp: %d" % (players[playerId].getName(), v.getName(), v.getName(), v.getHP()))
             # playerId's arrow killed their opponent player
-            if(v.hp < 0):
+            if(v.getHP() < 0):
                 players[playerId].increaseXP(30)
                 if canLevelUp(playerId):
                     players[playerId].levelUp()
                 players[playerId].increaseKills(1)
                 # print for debug
-                print("%s died.\nRespawning in 10 seconds...." % v.name)
+                print("%s died.\nRespawning in 10 seconds...." % v.getName())
                 respawnTimer = threading.Timer(RESPAWN_TIME,playerRespawning,[k])
                 respawnTimer.start()
                 players[k].playerDied()
                 broadcast("PLAYER_DIED",k)
             # print for debug
-            print("Player "+players[playerId].name+" new XP: "+str(players[playerId].xp))
-            broadcast("ARROW_HIT",(playerId,players[playerId].hits,players[playerId].xp,k,v.hp,v.stunDuration))
+            print("Player "+players[playerId].getName()+" new XP: "+str(players[playerId].getXP()))
+            broadcast("ARROW_HIT",(playerId,players[playerId].getHits(),players[playerId].getXP(),k,v.getHP(),v.getStunDuration()))
             return False
     return True 
 
@@ -174,12 +169,12 @@ def arrowCheck(playerId):
 def arrowMoving(playerId,mouse_x,mouse_y):
     global players,arrows
     # compute the angle
-    dx = mouse_x - players[playerId].xpos
-    dy = mouse_y - players[playerId].ypos
+    dx = mouse_x - players[playerId].getXPos()
+    dy = mouse_y - players[playerId].getYPos()
     arrows[playerId].angle = math.atan2(dy, dx)
     while arrowCheck(playerId):
         arrows[playerId].move()
-        broadcast("ARROW",(playerId,arrows[playerId].xpos,arrows[playerId].ypos))
+        broadcast("ARROW",(playerId,arrows[playerId].getXPos(),arrows[playerId].getYPos()))
         time.sleep(0.01)
     #r emove arrow from game
     arrows.pop(playerId)
@@ -188,7 +183,7 @@ def arrowMoving(playerId,mouse_x,mouse_y):
 # set cooldown for arrow
 def arrowCooldown(playerId):
     global players
-    players[playerId].arrowCd = False
+    players[playerId].setArrowCd(False)
     broadcast("ARROW_READY",playerId)
 
 def increaseXPAll():
@@ -196,6 +191,9 @@ def increaseXPAll():
     while gameState == GAME_END:
         time.sleep(100)
         for k, v in players.items():
+            # do not give dead players XP
+            if v.isDead():
+                continue
             v.increaseXP(100)
             print("increaseXPAll: {} XP up by 100!".format(k))
             if canLevelUp(k):
@@ -222,7 +220,7 @@ def receiver():
                 players[playerId] = player
                 players[playerId].setAddress(address)
                 broadcast("CONNECTED",(playerId,players))
-                print('%s connected....' % player.name)
+                print('%s connected....' % player.getName())
                 if(len(players)==num_players):
                     print("Game State: START")
                     gameState = GAME_START
@@ -237,18 +235,18 @@ def receiver():
             if(keyword == "PLAYER"):
                 playerId, mouse_x, mouse_y = data
                 # compute the angle
-                dx = mouse_x - players[playerId].xpos
-                dy = mouse_y - players[playerId].ypos
+                dx = mouse_x - players[playerId].getXPos()
+                dy = mouse_y - players[playerId].getYPos()
                 players[playerId].setDestX(mouse_x)
                 players[playerId].setDestY(mouse_y)
                 players[playerId].setAngle(math.atan2(dy, dx))
-                if(not players[playerId].moving):
+                if(not players[playerId].isMoving()):
                     pThread = threading.Thread(target=playerMoving,name="pThread",args=[playerId])
                     pThread.start()
             if(keyword == "ARROW"):
                 playerId, mouse_x, mouse_y = data
                 # initialize arrow
-                arrow = Arrow(playerId,players[playerId].xpos,players[playerId].ypos, players[playerId].power, players[playerId].distance, players[playerId].speed)
+                arrow = Arrow(playerId,players[playerId].getXPos(),players[playerId].getYPos(), players[playerId].getPower(), players[playerId].getDistance(), players[playerId].getSpeed())
                 # change arrow lists
                 arrows[playerId] = arrow
                 players[playerId].setArrowCd(True)
@@ -269,7 +267,7 @@ def receiver():
                 cdTimer.start()
             if(keyword == "STOP"):
                 playerId = data
-                players[playerId].moving = False
+                players[playerId].setMoving(False)
 
             if(keyword == "UPGRADE_POWER"):
                 # unpack/retrieve data
@@ -278,7 +276,7 @@ def receiver():
                 players[playerId].upgradePower()
                 players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
-                broadcast("UPGRADED_POWER", (playerId, players[playerId].power, players[playerId].upgrades))
+                broadcast("UPGRADED_POWER", (playerId, players[playerId].getPower(), players[playerId].getUpgrades()))
             if(keyword == "UPGRADE_DISTANCE"):
                 # unpack/retrieve data
                 playerId = data
@@ -286,7 +284,7 @@ def receiver():
                 players[playerId].upgradeDistance()
                 players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
-                broadcast("UPGRADED_DISTANCE", (playerId, players[playerId].distance, players[playerId].upgrades))
+                broadcast("UPGRADED_DISTANCE", (playerId, players[playerId].getDistance(), players[playerId].getUpgrades()))
             if(keyword == "UPGRADE_SPEED"):
                 # unpack/retrieve data
                 playerId = data
@@ -294,7 +292,7 @@ def receiver():
                 players[playerId].upgradeSpeed()
                 players[playerId].decreaseUpgrades()
                 # inform all other clients (including the client holding this player) the upgrade
-                broadcast("UPGRADED_SPEED", (playerId, players[playerId].speed, players[playerId].upgrades))
+                broadcast("UPGRADED_SPEED", (playerId, players[playerId].getSpeed(), players[playerId].getUpgrades()))
 
         elif gameState == GAME_END:
             broadcast("GAME_END",players)
