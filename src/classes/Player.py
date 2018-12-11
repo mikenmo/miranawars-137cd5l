@@ -71,7 +71,6 @@ class Player:
     def levelUp(self):
         self.upgrades += 1
         self.lvl += 1
-        
     def decreaseHP(self, hp):
         self.hp -= hp
 
@@ -204,3 +203,9 @@ class Player:
 
     def getAddress(self):
         return self.address
+
+    def getLvl(self):
+        return self.lvl
+
+    def setLvl(self, lvl):
+        self.lvl = lvl

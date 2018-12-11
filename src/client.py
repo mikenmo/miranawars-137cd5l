@@ -48,7 +48,7 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = (server_ip_address, 10000)
 
 def canLevelUp(playerId):
-    if players[playerId].xp % 100 == 0:
+    if players[playerId].getXP() % 100 == 0:
         return True
     return False
 
@@ -166,6 +166,12 @@ def receiver():
             if canLevelUp(p_id):
                 players[p_id].levelUp()
                 print("{} levels up!".format(players[p_id].getName()))
+        if keyword == "LEVEL_UP":
+            p_id, xp, lvl, upgrades = data
+            players[p_id].setXP(xp)
+            players[p_id].setLvl(lvl)
+            players[p_id].setUpgrades(upgrades)
+            print("{} levels up to {}!".format(players[p_id].getName(), players[p_id].getLvl()))
 
 
 

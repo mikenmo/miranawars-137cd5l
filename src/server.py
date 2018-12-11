@@ -7,8 +7,6 @@ try:
    import cPickle as pickle
 except:
    import pickle
-
-   
 from classes.Player import *
 from classes.Arrow import *
 
@@ -37,19 +35,6 @@ players                 = {}
 arrows                  = {}
 
 init_pos = [(30,60),(WIDTH-30,HEIGHT-60),(WIDTH-30,60),(30,HEIGHT-60)]
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = ('', 10000)
-server_socket.bind(server_address)
-
-# show host ip address
-print("Hosting at {}".format(server_address[0]))
-
-try:
-    num_players=int(sys.argv[1])
-except IndexError:
-    print("Correct usage: python3 server.py <num_of_players>")
-    raise SystemExit
 
 gameState = WAITING_FOR_PLAYERS
 
@@ -199,7 +184,9 @@ def increaseXPAll():
             v.increaseXP(XP_AMOUNT)
             if canLevelUp(k):
                 players[k].levelUp()
-            broadcast("INCREASE_XP", (k, XP_AMOUNT))
+                broadcast("LEVEL_UP", (k, v.getXP(), v.getLvl(), v.getUpgrades()))
+            else:
+                broadcast("INCREASE_XP", (k, XP_AMOUNT))
 
 def endGame():
     global gameState
@@ -296,6 +283,19 @@ def receiver():
 
         elif gameState == GAME_END:
             broadcast("GAME_END",players)
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = ('', 10000)
+server_socket.bind(server_address)
+
+# show host ip address
+print("Hosting at {}".format(server_address[0]))
+
+try:
+    num_players=int(sys.argv[1])
+except IndexError:
+    print("Correct usage: python3 server.py <num_of_players>")
+    raise SystemExit
 
 receiverThread = threading.Thread(target=receiver, name = "receiveThread", args = [])
 receiverThread.start()
